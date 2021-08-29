@@ -17,7 +17,11 @@ def run():
     for mapp in ann_mappings:
         mappings[mapp] = copy_mappings[ann_mappings[mapp]]
 
-    annotations = []
+    try:
+        with Path('data/annotations.json').open('w') as fs:
+            annotations = json.load(fs)
+    except FileNotFoundError:
+        annotations = []
 
     for json_path in RAW_DIR.glob('**/*.json'):
 
@@ -52,6 +56,7 @@ def run():
                 },
                 'regions': image_info['regions'] if isinstance(image_info['regions'], list) else list(image_info['regions'].values())
             })
+        json_path.unlink()
 
     print(len(annotations))
 

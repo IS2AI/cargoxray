@@ -32,12 +32,6 @@ def run():
     with Path('misc/copy_mappings.json').open('w') as fs:
         json.dump(copy_mappings, fs)
 
-    return
-    DST_DIR.mkdir(exist_ok=True)
-    for src, dst in tqdm.tqdm(copy_mappings.items(),
-                              total=len(copy_mappings),
-                              desc='Copying images'):
-        shutil.copy(src, dst)
 
 
 if __name__ == '__main__':
