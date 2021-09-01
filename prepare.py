@@ -7,7 +7,13 @@ import pandas as pd
 import shutil
 
 IMPORT_DIR = Path('/Users/contactone/Desktop/raw_x_ray backup')
-DESTINATION_DIR = Path('test')
+DESTINATION_DIR = Path('data')
+
+
+def cglob(path, patterns):
+    for pattern in patterns:
+        for p in path.glob(pattern):
+            yield p
 
 
 def prepare_images(dir, outdir):
@@ -31,7 +37,7 @@ def prepare_images(dir, outdir):
         next_id = images['id'].max(numeric_only=True) + 1
 
     src: Path
-    for src in tqdm.tqdm(list(dir.glob('**/*.tif'))[:100]):
+    for src in tqdm.tqdm(list(cglob(dir, ('**/*.tif', '**/*.jpg')))):
 
         md5_hash = md5(src.read_bytes()).hexdigest()
 
