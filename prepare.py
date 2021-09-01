@@ -74,7 +74,6 @@ def prepare_annotations(dir: Union[str, Path],
                         auxilary: Dict[str, int]):
 
     dir = Path(dir)
-    auxilary: dict = {}
 
     try:
         annotations = pd.read_json(outdir.joinpath('annotations.json.gz'),
@@ -93,6 +92,7 @@ def prepare_annotations(dir: Union[str, Path],
                                        'missing_image_name',
                                        'missing_image_size',
                                    ))
+        annotations['image_id'] = annotations['image_id'].astype(int)
         next_id = 1
 
     new_annotations = []
@@ -137,7 +137,7 @@ def prepare_annotations(dir: Union[str, Path],
 
                 new_ann = {
                     'id': next_id,
-                    'image_id': auxilary.get(ref, None),
+                    'image_id': auxilary.get(ref),
                     'x_points': x,
                     'y_points': y,
                     'label': label,
