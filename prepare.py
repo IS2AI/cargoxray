@@ -6,6 +6,7 @@ from typing import Any, Dict, Union
 import tqdm
 import pandas as pd
 import shutil
+import multiprocessing as mp
 
 IMPORT_DIR = Path('import')
 DESTINATION_DIR = Path('test')
@@ -31,10 +32,15 @@ def prepare_images(dir: Union[str, Path], outdir: Union[str, Path]) -> Dict[str,
 
     dir = Path(dir)
 
+    # Try to load existing database, create new otherwise
     try:
         images = pd.read_json(outdir.joinpath('images.json'),
                               orient='records',
                               typ='frame')
+
+        images = images.assign(old_filepath=len(images)*[None],
+                               ref=len(images)*[None])
+
         next_id = images['id'].max() + 1
     except:
         images = pd.DataFrame(columns=[
@@ -42,14 +48,15 @@ def prepare_images(dir: Union[str, Path], outdir: Union[str, Path]) -> Dict[str,
             'filepath',
             'size',
             'md5',
-            'old_filepath'
+            'old_filepath',
+            'ref',
         ])
         next_id = 1
 
     new_images = []
 
     src: Path
-    for src in tqdm.tqdm(list(cglob(dir, ('**/*.tif', '**/*.jpg'))),
+    for src in tqdm.tqdm(list(cglob(dir, ('**/*.tif', '**/*.jpg')))[:1000],
                          desc='Images hashing'):
 
         dst = outdir.joinpath(
@@ -60,29 +67,22 @@ def prepare_images(dir: Union[str, Path], outdir: Union[str, Path]) -> Dict[str,
             'filepath': dst,
             'size': src.stat().st_size,
             'md5': md5(src.read_bytes()).hexdigest(),
-            'old_filepath': src.as_posix()
+            'old_filepath': src.as_posix(),
+            'ref': '{}{}'.format(src.name, src.stat().st_size),
         })
 
         next_id += 1
 
     images = images.append(new_images, ignore_index=True)
-    images = images.drop_duplicates(['size', 'md5', 'old_filepath'])
-
-    no_md5_images = images.loc[images['md5'].isna()]
-    images = images.loc[images['md5'].notna()]
 
     images = images \
+        .sort_values('id') \
         .drop('old_filepath',
               axis=1) \
         .groupby('md5') \
         .first() \
         .merge(images[['md5', 'old_filepath']],
                on='md5')
-
-    images = images.append(no_md5_images, ignore_index=True)
-
-    images = images[['id', 'filepath', 'size',
-                     'md5', 'old_filepath']].sort_values('id')
 
     return images
 
@@ -112,6 +112,7 @@ def prepare_annotations(dir: Union[str, Path],
     next_image_id = images['id'].max() + 1
 
     new_annotations = []
+    bad_annotations = []
 
     src: Path
     for src in tqdm.tqdm(list(dir.glob('**/*.json')),
@@ -121,7 +122,7 @@ def prepare_annotations(dir: Union[str, Path],
             anns = json.load(fs)
 
         ann: Dict[str, Any]
-        for ann in anns.values():
+        for ref, ann in anns.items():
 
             if isinstance(ann['regions'], dict):
                 regions = list(ann['regions'].values())
@@ -145,6 +146,12 @@ def prepare_annotations(dir: Union[str, Path],
                     y = [y, y, y + h, y + h]
                 else:
                     print('Omitting', reg['shape_attributes'])
+                    bad_annotations.append({
+                        'img_filename': ann['filename'],
+                        'img_filesize': ann['size'],
+                        'region': reg,
+                        'reason': 'Undefined shape'
+                    })
                     continue
 
                 try:
@@ -152,26 +159,17 @@ def prepare_annotations(dir: Union[str, Path],
                 except KeyError:
                     label = None
 
-
-                img_id = images \
-                    .loc[(images['old_filepath'].str.endswith(ann['filename'])) \
-                    & (images['size'] == ann['size'])]
-                
-
-                if img_id.empty:
-
-                    img_id = pd.DataFrame({
-                        'id': next_image_id,
-                        'filepath': None,
-                        'size': ann['size'],
-                        'md5': None,
-                        'old_filepath': ann['filename'],
-                    },index=(1,))
-                    next_image_id += 1
-
-                    images = images.append(img_id, ignore_index=True)
-
-                img_id = img_id.iloc[0]['id']
+                try:
+                    img_id = images \
+                        .loc[images['ref'] == ref].iloc[0]['id']
+                except:
+                    bad_annotations.append({
+                        'img_filename': ann['filename'],
+                        'img_filesize': ann['size'],
+                        'region': reg,
+                        'reason': 'Missing image'
+                    })
+                    continue
 
                 new_ann = {
                     'id': next_id,
@@ -196,16 +194,28 @@ def prepare_annotations(dir: Union[str, Path],
         'y_points',
         'label',))
 
-    return images, annotations
+    return annotations
 
 
-def run():
-    DESTINATION_DIR.mkdir(exist_ok=True)
-    DESTINATION_DIR.joinpath('images').mkdir(exist_ok=True)
+def copy_images(images: pd.DataFrame):
 
-    images = prepare_images(IMPORT_DIR, DESTINATION_DIR)
-    images, annotations = prepare_annotations(
-        IMPORT_DIR, DESTINATION_DIR, images)
+    for row in images.iterrows():
+        src = Path(row['old_filepath'])
+        dst = Path(row['filename'])
+
+        if not src.exists():
+            shutil.copy(src, dst)
+
+
+def clean_images(images: pd.DataFrame):
+
+    images = images.drop(['old_filepath', 'ref'], axis=1)
+    images = images.drop_duplicates(subset=['filepath'])
+
+    return images
+
+
+def write_json(outdir, images: pd.DataFrame, annotations: pd.DataFrame):
 
     images.to_json(DESTINATION_DIR / 'images.json',
                    orient='records',
@@ -214,13 +224,21 @@ def run():
                         orient='records',
                         indent=2)
 
-    breakpoint()
 
-    for idx, row in tqdm.tqdm(images.loc[images['filepath'].notna()].iterrows(),
-                              desc='Copying images',
-                              total=len(images.loc[images['filepath'].notna()])):
-        if not Path(row['filepath']).exists():
-            shutil.copy(row['old_filepath'], row['filepath'])
+def run():
+    DESTINATION_DIR.mkdir(exist_ok=True)
+    DESTINATION_DIR.joinpath('images').mkdir(exist_ok=True)
+
+    images = prepare_images(IMPORT_DIR, DESTINATION_DIR)
+
+    annotations = prepare_annotations(
+        IMPORT_DIR, DESTINATION_DIR, images)
+
+    # copy_images(images)
+
+    images = clean_images(images)
+
+    write_json(DESTINATION_DIR, images, annotations)
 
 
 if __name__ == '__main__':
