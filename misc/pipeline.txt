@@ -1,0 +1,15 @@
+1. Hashing
+    Hash all files and produce a dictionary 'filepath' -> 'hash'
+2. Uniques finder
+    Using the generated hashes, map all duplicate files to one of them
+    to form a dictionary 'filepath' -> 'filepath'
+3. Annotation filenames lookup
+    Generate a dictionary of 'filename''filesize' -> 'filepath'
+    The destination filepath must be from the right side of uniques table
+4. Copy prepare
+    Prepare to copy by generating a dictionary of 'source' -> 'destination'
+    pairs
+5. Combine JSONs
+    Using the (3) and (4) tables generate new filepathes in JSON annotations
+    Write combined JSON to the new destination
+6. Copy files

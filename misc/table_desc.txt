@@ -1,0 +1,44 @@
+images
+    id
+    filepath
+    size in bytes
+    width
+    height
+    md5 checksum
+
+annotations
+    id
+    image_id
+    shape
+    class
+
+
+
+annotations
+{
+    image: {
+        filepath: '',
+        size: '',
+        height: '',
+        width: '',
+        md5: ''
+    }
+    regions: [
+        {
+            shape: {
+                name: '',
+                x: '',
+                y: ''
+            }
+            label: ''
+        },
+        {
+            shape: {
+                name: '',
+                x: '',
+                y: ''
+            }
+            label: ''
+        }        
+    ]
+}
