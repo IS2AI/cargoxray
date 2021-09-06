@@ -9,7 +9,7 @@ import shutil
 import multiprocessing as mp
 
 IMPORT_DIR = Path('import')
-DESTINATION_DIR = Path('test')
+DESTINATION_DIR = Path('data')
 
 
 def cglob(path, patterns):
@@ -56,7 +56,7 @@ def prepare_images(dir: Union[str, Path], outdir: Union[str, Path]) -> Dict[str,
     new_images = []
 
     src: Path
-    for src in tqdm.tqdm(list(cglob(dir, ('**/*.tif', '**/*.jpg')))[:1000],
+    for src in tqdm.tqdm(list(cglob(dir, ('**/*.tif', '**/*.jpg'))),
                          desc='Images hashing'):
 
         dst = outdir.joinpath(
@@ -76,12 +76,12 @@ def prepare_images(dir: Union[str, Path], outdir: Union[str, Path]) -> Dict[str,
     images = images.append(new_images, ignore_index=True)
 
     images = images \
-        .sort_values('id') \
-        .drop('old_filepath',
+        .drop(['old_filepath', 'ref'],
               axis=1) \
+        .sort_values('id') \
         .groupby('md5') \
         .first() \
-        .merge(images[['md5', 'old_filepath']],
+        .merge(images[['md5', 'old_filepath', 'ref']],
                on='md5')
 
     return images
@@ -199,11 +199,13 @@ def prepare_annotations(dir: Union[str, Path],
 
 def copy_images(images: pd.DataFrame):
 
-    for row in images.iterrows():
-        src = Path(row['old_filepath'])
-        dst = Path(row['filename'])
+    DESTINATION_DIR.joinpath('images').mkdir(parents=True, exist_ok=True)
 
-        if not src.exists():
+    for idx, row in images.loc[images['old_filepath'].notna()].iterrows():
+        src = Path(row['old_filepath'])
+        dst = Path(row['filepath'])
+
+        if not dst.exists():
             shutil.copy(src, dst)
 
 
@@ -217,6 +219,8 @@ def clean_images(images: pd.DataFrame):
 
 def write_json(outdir, images: pd.DataFrame, annotations: pd.DataFrame):
 
+    DESTINATION_DIR.mkdir(exist_ok=True)
+
     images.to_json(DESTINATION_DIR / 'images.json',
                    orient='records',
                    indent=2)
@@ -226,15 +230,13 @@ def write_json(outdir, images: pd.DataFrame, annotations: pd.DataFrame):
 
 
 def run():
-    DESTINATION_DIR.mkdir(exist_ok=True)
-    DESTINATION_DIR.joinpath('images').mkdir(exist_ok=True)
 
     images = prepare_images(IMPORT_DIR, DESTINATION_DIR)
 
     annotations = prepare_annotations(
         IMPORT_DIR, DESTINATION_DIR, images)
 
-    # copy_images(images)
+    copy_images(images)
 
     images = clean_images(images)
 
