@@ -15,7 +15,7 @@ class CargoXRay(torch.utils.data.Dataset):
 
         data_dir = Path(data_dir)
 
-        self.annotations = pd.read_json(data_dir / 'annotations.json')
+        self.annotations: pd.DataFrame = pd.read_json(data_dir / 'annotations.json')
         self.images = pd.read_json(data_dir / 'images.json')
 
         self.annotations = self.annotations.loc[
@@ -28,9 +28,11 @@ class CargoXRay(torch.utils.data.Dataset):
 
         self.annotations = self.annotations.drop(
             ['id_y', 'image_id'], axis='columns')
-        self.annotations = self.annotations.rename(
+        self.annotations: pd.DataFrame = self.annotations.rename(
             {'id_x': 'id'}, axis='columns')
         self.annotations = self.annotations.set_index('id')
+        self.annotations = self.annotations.sort_index()
+
 
         self.labels: pd.Series = self.annotations['label'] \
             .drop_duplicates() \
@@ -65,7 +67,7 @@ class CargoXRay(torch.utils.data.Dataset):
         w /= image.width
         h /= image.height
 
-        label = self.labels[sel['label']]
+        label = sel['label']
 
         return (sel['filepath'], (label, x, y, w, h,))
 
