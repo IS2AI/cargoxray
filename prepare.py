@@ -97,7 +97,7 @@ def prepare_annotations(dir: Union[str, Path],
         annotations = pd.read_json(outdir.joinpath('annotations.json'),
                                    orient='records',
                                    typ='frame')
-        next_id = annotations['id'].max()
+        next_id = annotations['id'].max() + 1
     except:
         annotations = pd.DataFrame(None,
                                    columns=(
@@ -131,6 +131,9 @@ def prepare_annotations(dir: Union[str, Path],
 
             for reg in regions:
 
+                if reg is None:
+                    continue
+
                 if reg['shape_attributes']['name'] == 'polyline' \
                         or reg['shape_attributes']['name'] == 'polygon':
                     x = reg['shape_attributes']['all_points_x']
@@ -160,8 +163,11 @@ def prepare_annotations(dir: Union[str, Path],
                     label = None
 
                 try:
-                    img_id = images \
-                        .loc[images['ref'] == ref].iloc[0]['id']
+                    sel = images.loc[images['ref'] == ref]
+                    img_id = sel.iloc[0]['id']
+                    if len(sel['md5'].unique()) > 1:
+                        print(sel)
+                        continue
                 except:
                     bad_annotations.append({
                         'img_filename': ann['filename'],
