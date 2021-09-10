@@ -64,14 +64,14 @@ def run(data_dir):
                 shutil.copy(fp[0], 'yolo/images/train/')
             with Path(f'yolo/labels/train/{Path(fp[0]).stem}.txt').open('a') as f:
                 f.write(str(label) + ', ')
-                f.write(', '.join([x.item() for x in ann[1:]]))
+                f.write(', '.join([str(x.item()) for x in ann[1:]]))
                 f.write('\n')
         else:
             if not Path('yolo/images/val', fp[0]).exists():
                 shutil.copy(fp[0], 'yolo/images/val/')
             with Path(f'yolo/labels/val/{Path(fp[0]).stem}.txt').open('a') as f:
                 f.write(str(label) + ', ')
-                f.write(', '.join([x.item() for x in ann[1:]]))
+                f.write(', '.join([str(x.item()) for x in ann[1:]]))
                 f.write('\n')
 
     with Path('yolo/yolo.yaml').open('w') as f:
