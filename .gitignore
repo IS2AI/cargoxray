@@ -1,4 +1,6 @@
-/data
-/import
-/test
+data
+import
+test
+__pycache__
+
 .DS_Store

@@ -3,7 +3,8 @@ from pathlib import Path
 import json
 from typing import Union
 import pandas as pd
-import PIL
+from PIL import Image
+import numpy as np
 
 
 class CargoXRay(torch.utils.data.Dataset):
@@ -17,33 +18,37 @@ class CargoXRay(torch.utils.data.Dataset):
         self.annotations = pd.read_json(data_dir / 'annotations.json')
         self.images = pd.read_json(data_dir / 'images.json')
 
-        print(len(self.images))
-        print(len(self.annotations))
-        return 
-
-        print(self.annotations)
-        print(self.images)
+        self.annotations = self.annotations.loc[
+            self.annotations['label'].notnull()]
 
         self.annotations = self.annotations.merge(
             self.images, 'inner',
             left_on='image_id',
             right_on='id')
-        
-        self.annotations = self.annotations.drop(['id_y', 'image_id'], axis='columns')
-        self.annotations = self.annotations.rename({'id_x': 'id'}, axis='columns')
+
+        self.annotations = self.annotations.drop(
+            ['id_y', 'image_id'], axis='columns')
+        self.annotations = self.annotations.rename(
+            {'id_x': 'id'}, axis='columns')
         self.annotations = self.annotations.set_index('id')
 
-        print(self.annotations)
+        self.labels: pd.Series = self.annotations['label'] \
+            .drop_duplicates() \
+            .sort_values() \
+            .reset_index(drop=True)
+        self.labels = self.labels.to_list()
+        self.labels = {val: idx for idx, val in enumerate(self.labels)}
+
 
     def __getitem__(self, idx):
-        
+
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
         sel = self.annotations.iloc[idx]
-        
-        # image = PIL.Image.open(sel['filepath'])
-        
+
+        image = Image.open(sel['filepath']).convert('L')
+
         x1 = min(sel['x_points'])
         y1 = min(sel['y_points'])
         x2 = max(sel['x_points'])
@@ -60,10 +65,9 @@ class CargoXRay(torch.utils.data.Dataset):
         w /= image.width
         h /= image.height
 
-        label = l2i(sel['label'])
+        label = self.labels[sel['label']]
 
-        return (image, (label, x, y, w, h,))
-
+        return (sel['filepath'], (label, x, y, w, h,))
 
     def __len__(self):
         return len(self.annotations)
@@ -71,4 +75,6 @@ class CargoXRay(torch.utils.data.Dataset):
 
 if __name__ == '__main__':
     ds = CargoXRay('data')
-    print(type(ds[5]))
+    
+    for img, ann in ds:
+        print(img)

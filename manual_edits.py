@@ -20,7 +20,17 @@ def run():
         'textiles',
         'tomates',
         'Household goods',
-        'Lamps'
+        'Lamps',
+        'Car wheels',
+        'Clothes',
+        'Shoes',
+        'Spare parts',
+        'appliances',
+        'car wheels ',
+        'carweels',
+        'carwheels',
+        'cars',
+        'equipment '
     ), (
         'broccoli',
         'clothes',
@@ -35,8 +45,21 @@ def run():
         'textile',
         'tomato',
         'household goods',
-        'lamps'
+        'lamps',
+        'car wheels',
+        'clothes',
+        'shoes',
+        'spare parts',
+        'appliance',
+        'car wheels',
+        'car wheels',
+        'car wheels',
+        'car',
+        'equipment'
     ))
+
+    for exx in annotations['label'].drop_duplicates().sort_values().to_list():
+        print("\"" + exx + "\"")
 
     annotations.to_json('data/annotations.json',
                         orient='records',
