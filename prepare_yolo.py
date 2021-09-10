@@ -51,26 +51,26 @@ def run(data_dir):
 
     for fp, ann in dl:
 
-        label = ann[0].item()
+        label = ann[0][0]
 
         if label not in labels:
             labels[label] = len(labels)
 
         label = labels[label]
 
-        if random.random() >= 0.85 or fp.item() in train:
-            train.add(fp.item())
-            if not Path('yolo/images/train', fp.item()).exists():
-                shutil.copy(fp.item(), 'yolo/images/train/')
-            with Path(f'yolo/labels/train/{Path(fp.item()).stem}.txt').open('a') as f:
-                f.write(label + ', ')
+        if random.random() >= 0.1 or fp[0] in train:
+            train.add(fp[0])
+            if not Path('yolo/images/train', fp[0]).exists():
+                shutil.copy(fp[0], 'yolo/images/train/')
+            with Path(f'yolo/labels/train/{Path(fp[0]).stem}.txt').open('a') as f:
+                f.write(str(label) + ', ')
                 f.write(', '.join([x.item() for x in ann[1:]]))
                 f.write('\n')
         else:
-            if not Path('yolo/images/val', fp.item()).exists():
-                shutil.copy(fp.item(), 'yolo/images/val/')
-            with Path(f'yolo/labels/val/{Path(fp.item()).stem}.txt').open('a') as f:
-                f.write(label + ', ')
+            if not Path('yolo/images/val', fp[0]).exists():
+                shutil.copy(fp[0], 'yolo/images/val/')
+            with Path(f'yolo/labels/val/{Path(fp[0]).stem}.txt').open('a') as f:
+                f.write(str(label) + ', ')
                 f.write(', '.join([x.item() for x in ann[1:]]))
                 f.write('\n')
 
@@ -78,7 +78,7 @@ def run(data_dir):
         f.write('train: yolo/images/train\n')
         f.write('val: yolo/images/val\n')
         f.write(f'nc: {len(labels)}\n')
-        f.write(f'names: [{", ".join([labels.keys()])}]\n')
+        f.write(f'names: [{", ".join(list(labels.keys()))}]\n')
 
 
 if __name__ == '__main__':
