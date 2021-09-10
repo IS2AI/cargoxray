@@ -22,8 +22,8 @@ def run(data_dir):
     sel = ds.annotations.groupby('label').count()[['x_points']].rename(
         {'x_points': 'count'}, axis='columns')
 
-    sel: pd.DataFrame = sel.merge(
-        ds.annotations.reset_index(), on='label').sort_values('id')
+    sel: pd.DataFrame = ds.annotations.merge(
+        sel, on='label')
 
     weights = []
 
