@@ -53,6 +53,9 @@ def run(data_dir):
 
         label = ann[0][0]
 
+        Path().read_text()
+        Path().write_text()
+
         if label not in labels:
             labels[label] = len(labels)
 
@@ -63,15 +66,15 @@ def run(data_dir):
             if not Path('yolo/images/train', fp[0]).exists():
                 shutil.copy(fp[0], 'yolo/images/train/')
             with Path(f'yolo/labels/train/{Path(fp[0]).stem}.txt').open('a') as f:
-                f.write(str(label) + ', ')
-                f.write(', '.join([str(x.item()) for x in ann[1:]]))
+                f.write(str(label) + ' ')
+                f.write(' '.join([str(x.item()) for x in ann[1:]]))
                 f.write('\n')
         else:
             if not Path('yolo/images/val', fp[0]).exists():
                 shutil.copy(fp[0], 'yolo/images/val/')
             with Path(f'yolo/labels/val/{Path(fp[0]).stem}.txt').open('a') as f:
-                f.write(str(label) + ', ')
-                f.write(', '.join([str(x.item()) for x in ann[1:]]))
+                f.write(str(label) + ' ')
+                f.write(' '.join([str(x.item()) for x in ann[1:]]))
                 f.write('\n')
 
     with Path('yolo/yolo.yaml').open('w') as f:
@@ -81,5 +84,13 @@ def run(data_dir):
         f.write(f'names: [{", ".join(list(labels.keys()))}]\n')
 
 
+def run2(data_dir):
+    ds = CargoXRay(data_dir)
+    
+    ds.annotations.groupby('label').count()['x_points'].sort_values(ascending=False).to_csv('info.csv')
+    print(len(ds.annotations))
+
+
+
 if __name__ == '__main__':
-    run('data')
+    run2('data')

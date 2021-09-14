@@ -1,0 +1,4 @@
+id -> image_id in images.json
+augmentations
+check duplicate bounding boxes
+make list of missing images

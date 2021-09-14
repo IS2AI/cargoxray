@@ -1,3 +1,4 @@
+from skimage.util.dtype import convert
 import torch.utils.data
 from pathlib import Path
 import json
@@ -5,78 +6,100 @@ from typing import Union
 import pandas as pd
 from PIL import Image
 import numpy as np
+import torch
+import skimage.io
 
 
 class CargoXRay(torch.utils.data.Dataset):
 
     def __init__(self,
                  data_dir: Union[str, Path],
+                 dropna=True,
                  transform=None):
 
+        # Load dataframes
         data_dir = Path(data_dir)
 
-        self.annotations: pd.DataFrame = pd.read_json(data_dir / 'annotations.json')
+        self.annotations: pd.DataFrame = pd.read_json(
+            data_dir / 'annotations.json')
         self.images = pd.read_json(data_dir / 'images.json')
 
-        self.annotations = self.annotations.loc[
-            self.annotations['label'].notnull()]
+        # Drop bad annotations (missing labels)
 
-        self.annotations = self.annotations.merge(
-            self.images, 'inner',
-            left_on='image_id',
-            right_on='id')
+        if dropna:
+            self.annotations = self.annotations.dropna()
 
-        self.annotations = self.annotations.drop(
-            ['id_y', 'image_id'], axis='columns')
-        self.annotations: pd.DataFrame = self.annotations.rename(
-            {'id_x': 'id'}, axis='columns')
-        self.annotations = self.annotations.set_index('id')
-        self.annotations = self.annotations.sort_index()
+        # Drop images that do not have corresponding annotations
 
-
-        self.labels: pd.Series = self.annotations['label'] \
+        self.images = self.annotations['image_id'].to_frame() \
             .drop_duplicates() \
-            .sort_values() \
-            .reset_index(drop=True)
-        self.labels = self.labels.to_list()
-        self.labels = {val: idx for idx, val in enumerate(self.labels)}
+            .merge(right=self.images,
+                   how='inner',
+                   on='image_id') \
+            .set_index('image_id') \
+            .sort_index()
 
+        # Set annotations index
+
+        self.annotations = self.annotations \
+            .set_index('id') \
+            .sort_index()
+
+        # Generate datafram of labels
+        # Labels id are assigned according to their frequency
+        # i.e., most frequent label will have lower label_id
+
+        self.labels = self.annotations \
+            .groupby('label') \
+            .count()['image_id'] \
+            .to_frame() \
+            .sort_values('image_id', ascending=False) \
+            .drop(columns='image_id') \
+            .reset_index()
+        self.labels.index.rename('label_id', inplace=True)
+
+    def __len__(self):
+        return len(self.images)
 
     def __getitem__(self, idx):
 
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+        # if torch.is_tensor(idx):
+        #     idx = idx.tolist()
 
-        sel = self.annotations.iloc[idx]
+        sel_img = self.images.iloc[idx]
 
-        image = Image.open(sel['filepath']).convert('L')
+        # image = Image.open(sel_img['filepath'])
+        image = skimage.io.imread(sel_img['filepath'], as_gray=True)
+        image = torch.Tensor(image)
+        if image.max() <= 2**8:
+            image.div(2**8)
+        elif image.max() <= 2**16:
+            image.div(2**16)
+        image = image[None, :]
 
-        x1 = min(sel['x_points'])
-        y1 = min(sel['y_points'])
-        x2 = max(sel['x_points'])
-        y2 = max(sel['y_points'])
+        sel_ann = self.annotations \
+            .loc[self.annotations['image_id'] == sel_img.name]
 
-        x = (x1 + x2) // 2
-        y = (y1 + y2) // 2
+        bboxes = []
+        labels = []
 
-        w = x2 - x1
-        h = y2 - y1
+        for _, ann in sel_ann.iterrows():
+            bboxes.append((
+                min(ann['x_points']),
+                min(ann['y_points']),
+                max(ann['x_points']),
+                max(ann['y_points']),
+            ))
+            labels.append(ann['label'])
 
-        x /= image.width
-        y /= image.height
-        w /= image.width
-        h /= image.height
+        bboxes = torch.Tensor(bboxes)
+        labels = torch.Tensor([self.labels.loc[self.labels['label'] == l].iloc[0].name for l in labels])
 
-        label = sel['label']
-
-        return (sel['filepath'], (label, x, y, w, h,))
-
-    def __len__(self):
-        return len(self.annotations)
+        return (image, bboxes, labels)
 
 
 if __name__ == '__main__':
     ds = CargoXRay('data')
-    
-    for img, ann in ds:
-        print(img)
+    print(len(ds))
+
+    print(ds[9777])

@@ -1,6 +1,8 @@
 data
 import
 test
+scratches
 __pycache__
+.ipynb_checkpoints
 
 .DS_Store
