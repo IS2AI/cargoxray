@@ -1,35 +1,43 @@
 from typing import Tuple, Union
 import torch
+from torch import Tensor
 import torchvision
 import random
 from PIL import Image
+import albumentations as alb
+import torchvision.transforms as tf
 
 
-class RandomHorizontalFlip:
+bbox_params = alb.BboxParams(format='pascal_voc',
+                             label_fields=('labels',))
 
-    def __init__(self, p=0.5):
-        self.p = p
-        self.flipper = torchvision.transforms.RandomHorizontalFlip(1)
+aug = alb.Compose(
+    transforms=[
 
-    def __call__(self, sample) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        alb.Affine(scale=1,
+                   rotate=3,
+                   shear=3,
+                   mode=cv2.BORDER_REFLECT101,
+                   p=0.25),
 
-        if random.random() <= self.p:
+        alb.SmallestMaxSize(max_size=800),
 
-            image: torch.Tensor
-            bboxes: torch.Tensor
-            labels: torch.Tensor
+        alb.RandomCrop(800, 800),
 
-            image, bboxes, labels = sample
+        alb.HorizontalFlip(p=0.25),
 
-            flipped_image = self.flipper(image)
-            
-            pivot = torch.Tensor((1, 0, 1, 0)) \
-                .mul(image.size(2)) \
-                .expand(bboxes.size(0), -1)
-            flipped_bboxes = pivot - bboxes
-            flipped_bboxes = flipped_bboxes.abs()
+        alb.Equalize(p=0.25),
 
-            return (flipped_image, flipped_bboxes, labels)
+        alb.RandomGamma(gamma_limit=(85, 115),
+                        p=0.25),
 
-        else:
-            return sample
+    ],
+    bbox_params=bbox_params
+)
+
+wbboxes = tf.ToPILImage()(torchvision.utils.draw_bounding_boxes(
+    torch.from_numpy(sample['image']).expand(3, -1, -1), 
+    boxes=torch.IntTensor(sample['bboxes']),
+    labels=sample['labels']
+))
+disp(wbboxes)

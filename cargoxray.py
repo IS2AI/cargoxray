@@ -8,12 +8,13 @@ from PIL import Image
 import numpy as np
 import torch
 import skimage.io
+from typing import Tuple, List
 
 
 class CargoXRay(torch.utils.data.Dataset):
 
     def __init__(self,
-                 data_dir: Union[str, Path],
+                 data_dir: Union[str, Path] = 'data',
                  dropna=True,
                  transform=None):
 
@@ -58,24 +59,38 @@ class CargoXRay(torch.utils.data.Dataset):
             .reset_index()
         self.labels.index.rename('label_id', inplace=True)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.images)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[
+            Image.Image,
+            List[
+                Tuple[
+                    int,
+                    int,
+                    int,
+                    int
+                ]],
+            List[str]]:
 
         # if torch.is_tensor(idx):
         #     idx = idx.tolist()
 
         sel_img = self.images.iloc[idx]
 
-        # image = Image.open(sel_img['filepath'])
-        image = skimage.io.imread(sel_img['filepath'], as_gray=True)
-        image = torch.Tensor(image)
-        if image.max() <= 2**8:
-            image.div(2**8)
-        elif image.max() <= 2**16:
-            image.div(2**16)
-        image = image[None, :]
+        image = Image.open(sel_img['filepath'])
+        if image.mode == 'I;16':
+            image = image.convert('I').point(
+                [i/256 for i in range(2**16)], 'L')
+        else:
+            image = image.convert('L')
+        # image = skimage.io.imread(sel_img['filepath'], as_gray=True)
+        # image = torch.Tensor(image)
+        # if image.max() <= 2**8:
+        #     image.div(2**8)
+        # elif image.max() <= 2**16:
+        #     image.div(2**16)
+        # image = image[None, :]
 
         sel_ann = self.annotations \
             .loc[self.annotations['image_id'] == sel_img.name]
@@ -92,8 +107,9 @@ class CargoXRay(torch.utils.data.Dataset):
             ))
             labels.append(ann['label'])
 
-        bboxes = torch.Tensor(bboxes)
-        labels = torch.Tensor([self.labels.loc[self.labels['label'] == l].iloc[0].name for l in labels])
+        # bboxes = torch.Tensor(bboxes)
+        # labels = torch.Tensor(
+        #     [self.labels.loc[self.labels['label'] == l].iloc[0].name for l in labels])
 
         return (image, bboxes, labels)
 
