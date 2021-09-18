@@ -2,7 +2,8 @@ from numpy import nan
 import pandas as pd
 
 
-def run():
+
+def rename():
     annotations = pd.read_json('data/annotations.json',
                                orient='records')
 
@@ -64,6 +65,11 @@ def run():
     annotations.to_json('data/annotations.json',
                         orient='records',
                         indent=2)
+
+def split():
+
+    annotations = pd.read
+
 
 if __name__ == '__main__':
     run()

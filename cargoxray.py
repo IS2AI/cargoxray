@@ -1,14 +1,12 @@
-from skimage.util.dtype import convert
-import torch.utils.data
-from pathlib import Path
 import json
-from typing import Union
-import pandas as pd
-from PIL import Image
+from pathlib import Path
+from typing import List, Tuple, Union
+
 import numpy as np
+import pandas as pd
 import torch
-import skimage.io
-from typing import Tuple, List
+import torch.utils.data
+from PIL import Image
 
 
 class CargoXRay(torch.utils.data.Dataset):
