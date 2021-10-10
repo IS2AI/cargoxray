@@ -1,12 +1,6 @@
-data
-import
-test
-scratches
+.vscode
 __pycache__
 .ipynb_checkpoints
-
 .DS_Store
 
-yolo
-raw_backup
-/data_new
+data
