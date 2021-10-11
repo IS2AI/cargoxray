@@ -1,60 +1,81 @@
-
-# # Constants & settings
-
 import json
 import logging
-import multiprocessing as mp
-import os
-import pathlib
-import shutil
 from hashlib import md5
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Optional
 
 import pandas as pd
 import tqdm
-from IPython.display import display
 from PIL import Image, UnidentifiedImageError
 
-WORKDIR = '/raid/ruslan_bazhenov/projects/xray/cargoxray'
-DATA_DIR = 'data'
+DATA_DIR = '/raid/ruslan_bazhenov/projects/xray/cargoxray/data'
 
 
-def scan_images(images: pd.DataFrame]):
-    # # Import images
-    # ## Load existsing images databases if exist
+def count_files(folder: Union[str, Path]) -> Dict[str, int]:
+    """Count the number of files by extensions"""
 
-    images = images.copy()
+    logging.info(f'Counting files in {folder}')
+    fldr = Path(folder)
+    sufcnt = {}
+    for f in fldr.glob('**/*'):
+        if f.is_file():
+            try:
+                sufcnt[f.suffix] += 1
+            except KeyError:
+                sufcnt[f.suffix] = 1
 
+    return sufcnt
+
+
+def load_frame(path_to_frame: Optional[Union[str, Path]] = None) \
+        -> pd.DataFrame:
+    """Load a dataframe if exists, or generate new"""
+
+    logging.info(f'Loading frame {path_to_frame}')
     try:
-        images = pd.read_json(DATA_DIR / 'images2.json.gz',
-                              orient='records',
-                              typ='frame',
-                              compression='gzip')
-        images = images.set_index('image_id')
+        frame = pd.read_json(path_to_frame,
+                             orient='records',
+                             typ='frame',
+                             compression='gzip')
 
-        next_id = images.index.max() + 1
     except:
-        images = pd.DataFrame()
-        images.index.name = 'image_id'
+        frame = pd.DataFrame()
+
+    return frame
+
+
+def scan_images(images_dir: Union[str, Path],
+                data_dir: Union[str, Path],
+                images_frame: pd.DataFrame) \
+        -> pd.DataFrame:
+    """Scan "images_dir" for .tif files, save info about the file in 
+    "images_frame". Image paths are stored relative to "data_dir". """
+
+    logging.info(f'Scanning images in {images_dir}')
+
+    img_dir = Path(images_dir)
+    img_frm = images_frame.copy()
+
+    if len(img_frm) > 0:
+        next_id = img_frm.index.max() + 1
+    else:
         next_id = 0
 
-    # ## Scan & import image files
-
     image_path: Path
+    for image_path in tqdm.tqdm(list(img_dir.glob('**/*.tif')), desc='Images'):
 
-    for image_path in tqdm.tqdm(list(DATA_DIR.glob('images/**/*.tif')), desc='Images'):
+        rel_path = image_path.relative_to(data_dir)
+        logging.debug(rel_path)
 
         # Skip already imported images
-        if len(images.loc[images['filepath'] == image_path
-                          .relative_to(DATA_DIR)
-                          .as_posix()]) > 0:
-            continue
+        if len(img_frm) > 0:
+            if len(img_frm.loc[img_frm['filepath'] == rel_path.as_posix()]) > 0:
+                continue
 
         try:
             image = Image.open(image_path)
         except UnidentifiedImageError:
-            print('Broken image {}'.format(image_path))
+            logging.error(f"Corrupted image \"{image_path}\"")
             continue
 
         image_info = pd.Series(name=next_id, data={
@@ -63,7 +84,7 @@ def scan_images(images: pd.DataFrame]):
             'size': image_path.stat().st_size,
             'width': image.width,
             'height': image.height,
-            'filepath': image_path.relative_to(DATA_DIR).as_posix(),
+            'filepath': rel_path.as_posix(),
 
         })
 
@@ -71,73 +92,37 @@ def scan_images(images: pd.DataFrame]):
 
         image.close()
 
-        images = images.append(image_info)
+        img_frm = img_frm.append(image_info)
 
-    # ## Map duplicate images to the same location
-
-    images = images\
-        .drop(columns=['filepath'])\
-        .drop_duplicates('md5')\
-        .reset_index()\
-        .merge(images[['md5',
-                       'filepath']],
-               on='md5') \
-        .set_index('image_id') \
-        .drop_duplicates()
-
-    return images 
-    # # Import annotations
-    # ## Load existing annotations files
+    return img_frm
 
 
-def run():
-    global WORKDIR
-    global IMAGES_DIR
-    global DATA_DIR
+def scan_annotations(annotations_dir: Union[str, Path],
+                     annotations_frame: pd.DataFrame,
+                     images_frame: pd.DataFrame) \
+        -> pd.DataFrame:
+    """ Scan "annotations_dir" for .json files and append annotations to 
+    "annotations_frame". Images are linked to annotations via
+    "image_id" and "images_frame"."""
 
-    # # Change workdir and import libraries
+    logging.info(f'Scanning annotations in {annotations_dir}')
+    ann_dir = Path(annotations_dir)
+    ann_frm = annotations_frame.copy()
+    img_frm = images_frame.copy()
 
-    os.chdir(WORKDIR)
-    DATA_DIR = Path(DATA_DIR)
-
-    # # Preview files counts
-
-    logging.info('Images dir content')
-
-    sufcnt = {}
-    for f in DATA_DIR.glob('images/**/*'):
-        if f.is_file():
-            try:
-                sufcnt[f.suffix] += 1
-            except KeyError:
-                sufcnt[f.suffix] = 1
-
-    for k, v in sufcnt.items():
-        print(f'{k.strip("."):>10} : {v}')
-
-
-    try:
-        annotations = pd.read_json(DATA_DIR / 'annotations.json.gz',
-                                   orient='records',
-                                   typ='frame',
-                                   compression='gzip')
-        annotations = annotations.set_index('bbox_id')
-
-        next_id = annotations.index.max() + 1
-
-    except:
-
-        annotations = pd.DataFrame()
-        annotations.index.name = 'bbox_id'
+    if len(ann_frm) > 0:
+        next_id = img_frm.index.max() + 1
+    else:
         next_id = 0
 
-    # ## Scan & import JSON files
+    #  Scan & import JSON files
+    img_frm = img_frm.assign(
+        filename=img_frm['filepath'].apply(lambda x: Path(x).name))
 
-    images['filename'] = images['filepath'].apply(lambda x: Path(x).name)
-
-    for src in tqdm.tqdm(list(DATA_DIR.glob('images/**/*.json')),
+    for src in tqdm.tqdm(list(ann_dir.glob('**/*.json')),
                          desc='JSONs'):
 
+        logging.debug(f'Scanning annotations in {src}')
         # Annotations loaded
         with src.open('rb') as fs:
             anns = json.load(fs)
@@ -147,15 +132,17 @@ def run():
         for ref, ann in anns.items():
 
             # Try to find the corresponding image
-            sel = images.loc[(images['filename'] == ann['filename'])
-                             & (images['size'] == ann['size'])]
+            sel = img_frm.loc[(img_frm['filename'] == ann['filename'])
+                              & (img_frm['size'] == ann['size'])]
 
             sel = sel.drop_duplicates('md5')
 
+            # Corresponding image not found, skip the annotation
             if len(sel) == 0:
                 continue
+            # More than one image found, warning
             elif len(sel) > 1:
-                display(sel)
+                logging.warning(sel['filepath'].to_string())
 
             # In some JSON files regions are dict, in some are lists
             if isinstance(ann['regions'], dict):
@@ -171,26 +158,31 @@ def run():
                     continue
 
                 # Try to indentify bbox shape
-                if reg['shape_attributes']['name'] == 'polyline' or reg['shape_attributes']['name'] == 'polygon':
-                    x = reg['shape_attributes']['all_points_x']
-                    y = reg['shape_attributes']['all_points_y']
+                if reg['shape_attributes']['name'] == 'polyline' \
+                        or reg['shape_attributes']['name'] == 'polygon':
+                    x_points = reg['shape_attributes']['all_points_x']
+                    y_points = reg['shape_attributes']['all_points_y']
 
                 elif reg['shape_attributes']['name'] == 'rect':
-                    x = reg['shape_attributes']['x']
-                    y = reg['shape_attributes']['y']
+                    x_points = reg['shape_attributes']['x']
+                    y_points = reg['shape_attributes']['y']
                     w = reg['shape_attributes']['width']
                     h = reg['shape_attributes']['height']
 
-                    x = [x, x + w, x + w, x]
-                    y = [y, y, y + h, y + h]
+                    x_points = [x_points, x_points + w, x_points + w, x_points]
+                    y_points = [y_points, y_points, y_points + h, y_points + h]
                 else:
-                    print('Omitting', reg['shape_attributes'])
+                    logging.warning(
+                        f'Unexpected annotation shape in '
+                        f'"{src}", "{ann["filename"]}{ann["size"]}". '
+                        f'Found {reg["shape_attributes"]["name"]}')
                     continue
 
-                x_center = (max(x) + min(x)) / 2 / sel.iloc[0]['width']
-                w = (max(x) - min(x)) / sel.iloc[0]['width']
-                y_center = (max(y) + min(y)) / 2 / sel.iloc[0]['height']
-                h = (max(y) - min(y)) / sel.iloc[0]['height']
+                x = (max(x_points) + min(x_points)) / 2 / sel.iloc[0]['width']
+                w = (max(x_points) - min(x_points)) / sel.iloc[0]['width']
+
+                y = (max(y_points) + min(y_points)) / 2 / sel.iloc[0]['height']
+                h = (max(y_points) - min(y_points)) / sel.iloc[0]['height']
 
                 # Case for missing labels
 
@@ -198,45 +190,120 @@ def run():
                     label = reg['region_attributes']['class name'].lower()
                 except KeyError:
                     label = None
-                
-                if x_center is None:
-                    print('help')
 
-                bbox_info = pd.Series(name=next_id, data={
-                    'image_id': sel.iloc[0].name,
-                    'x': x_center,
-                    'y': y_center,
-                    'width': w,
-                    'height': h,
-                    'label': label
-                })
+                bbox_info = pd.Series(name=next_id,
+                                      data={
+                                          'image_id': int(sel.iloc[0].name),
+                                          'x': x,
+                                          'y': y,
+                                          'width': w,
+                                          'height': h,
+                                          'label': label
+                                      })
                 next_id += 1
 
-                annotations = annotations.append(bbox_info)
+                ann_frm = ann_frm.append(bbox_info)
 
-    # ## Cleanup labels
-    # Remove trailing and leading whitespaces, type every label with lowercase
+    return ann_frm
 
-    annotations['label'] = annotations['label'].apply(
+
+def cleanup_images(images_frame: pd.DataFrame) -> pd.DataFrame:
+    img_frm = images_frame.copy()
+
+    img_frm = img_frm\
+        .drop(columns=['filepath'])\
+        .drop_duplicates('md5')\
+        .reset_index()\
+        .merge(img_frm[['md5', 'filepath']],
+               on='md5') \
+        .set_index('image_id') \
+        .drop_duplicates()
+
+    return img_frm
+
+
+def cleanup_annotations(annotations: pd.DataFrame) -> pd.DataFrame:
+
+    ann_frm = annotations.copy()
+
+    # Strip and lowercase everything
+    ann_frm['label'] = ann_frm['label'].apply(
         lambda x: x.strip().lower() if isinstance(x, str) else pd.NA)
-    annotations
 
-    # ## Remove duplicate annotations if any
+    # Load manual label typos fixes dictionary
+    label_mappings_fix = pd.read_csv(
+        '/raid/ruslan_bazhenov/projects/xray/cargoxray/utils/'
+        'label_mappings_fix.csv',
+        names=['original', 'typos', 'merge']
+    ).set_index('original')
 
-    annotations = annotations.drop_duplicates()
+    # Apply manual label fixes
+    ann_frm = ann_frm.replace(label_mappings_fix['typos'].to_dict())
 
-    # # Dump annotations and images
+    # Drop duplicates
+    ann_frm = ann_frm.drop_duplicates()
 
-    images.reset_index().to_json(DATA_DIR / 'images2.json.gz',
-                                 orient='records',
-                                 compression='gzip',
-                                 default_handler=str)
+    return ann_frm
 
-    annotations.reset_index().to_json(DATA_DIR / 'annotations2.json.gz',
-                                      orient='records',
-                                      compression='gzip',
-                                      default_handler=str)
+
+def save_frame(frame: pd.DataFrame, destination: Union[str, Path]) -> None:
+    logging.info(f'Saving frame {destination}')
+    frame.reset_index().to_json(destination,
+                                orient='records',
+                                compression='gzip',
+                                default_handler=str)
+
+
+def run(DATA_DIR):
+
+    logging.info('Start')
+
+    data_dir = Path(DATA_DIR)
+
+    sufcnt = count_files(data_dir / 'images')
+
+    for k, v in sufcnt.items():
+        print(f'{k.strip("."):>10} : {v}')
+
+    #  Import images
+
+    #  Load existsing images databases if exist
+    images = load_frame(data_dir / 'images_v2.json.gz')
+    if len(images) > 0:
+        images = images.set_index('image_id')
+    else:
+        images.index.name = 'image_id'
+
+    #  Scan & import image files
+    images = scan_images(data_dir / 'images', data_dir, images)
+
+    #  Map duplicate images to the same location
+    images = cleanup_images(images)
+
+    #  Import annotations
+
+    #  Load existing annotations files
+
+    annotations = load_frame(None)
+    if len(annotations) > 0:
+        annotations = annotations.set_index('bbox_id')
+    else:
+        annotations.index.name = 'bbox_id'
+
+    annotations = scan_annotations(data_dir / 'images',
+                                   annotations,
+                                   images)
+
+    # Refine annotations labels
+    annotations = cleanup_annotations(annotations)
+
+    save_frame(images, data_dir / 'images_v3.json.gz')
+    save_frame(annotations, data_dir / 'annotations_v3.json.gz')
+
+    logging.info('Finish')
 
 
 if __name__ == '__main__':
-    run()
+    logging.basicConfig(filename=f'{Path(__file__)}.log',
+                        level=logging.INFO)
+    run(DATA_DIR)
