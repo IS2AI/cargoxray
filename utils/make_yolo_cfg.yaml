@@ -1,0 +1,20 @@
+root_dir: /raid/ruslan_bazhenov/projects/xray/cargoxray/data
+
+annotations: annotations_v4.json.gz
+images: images_v4.json.gz
+
+output_dir: test_yolo
+
+selected_classes:
+  clothes: clothes
+  fabrics: fabrics
+  shoes: shoes
+  spare parts: spare parts
+  tools: spare parts
+  auto parts: spare parts
+  textile: textile
+  toys: toys
+
+unlabeled: true
+empty: true
+other: true

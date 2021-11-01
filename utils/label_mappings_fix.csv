@@ -108,10 +108,10 @@ tomato,tomato,tomato
 tool,tools,tools
 tools,tools,tools
 toys,toys,toys
-cataloga,cataloga,unknown
-dummy,unknown,unknown
-unknown,unknown,unknown
-<NA>,unknown,unknown
+cataloga,cataloga,<NA>
+dummy,<NA>,<NA>
+unknown,<NA>,<NA>
+<NA>,<NA>,<NA>
 washing powder,washing powder,washing powder
 car wheels,wheels,wheels
 carweels,wheels,wheels
