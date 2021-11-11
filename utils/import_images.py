@@ -12,23 +12,6 @@ from PIL import Image, UnidentifiedImageError
 IMAGE_FORMATS = {'.tif', '.tiff', '.jpeg', '.jpg'}
 
 
-def count_files(folder: Union[str, Path]) -> None:
-    """Count the number of files by extensions and print the report"""
-
-    logging.info(f'Counting files in {folder}')
-    fldr = Path(folder)
-    sufcnt = {}
-    for f in fldr.glob('**/*'):
-        if f.is_file():
-            try:
-                sufcnt[f.suffix] += 1
-            except KeyError:
-                sufcnt[f.suffix] = 1
-
-    for k, v in sufcnt.items():
-        print(f'{k.strip("."):>10} : {v}')
-
-
 def scan_images(images_dir: Union[str, Path],
                 _root_dir: Union[str, Path],
                 images_frame: pd.DataFrame) \
@@ -119,7 +102,7 @@ def scan_annotations(annotations_dir: Union[str, Path],
         filename=_images_frame['filepath'].apply(lambda x: Path(x).name))
 
     src: Path
-    for src in tqdm.tqdm(list(_annotations_dir.glob('**/*.json')),
+    for src in tqdm.tqdm(list(_annotations_dir.glob('**/*.json'))[:10],
                          desc='JSONs'):
 
         logging.debug(f'Scanning annotations in {src}')
@@ -222,7 +205,7 @@ def scan_annotations(annotations_dir: Union[str, Path],
 
         _json_files_frame = _json_files_frame.append(json_info)
 
-    return tuple(_annotations_frame, _json_files_frame,)
+    return (_annotations_frame, _json_files_frame,)
 
 
 def cleanup_images(images_frame: pd.DataFrame) -> pd.DataFrame:
@@ -376,7 +359,8 @@ def run(root_dir: Union[Path, str],
 
     except:
         json_files = pd.DataFrame(columns=['json_id', 'filepath', 'md5'])
-    json_files.set_index('json_id')
+    
+    json_files = json_files.set_index('json_id')
 
     annotations = add_empty(annotations, images)
 
