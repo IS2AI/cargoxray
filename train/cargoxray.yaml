@@ -1,0 +1,5 @@
+path: /home/ruslan_bazhenov/raid/projects/xray/cargoxray/data/yolo_dataset_v5
+train: train/images
+val: val/images
+nc: 6
+names: [clothes, fabrics, shoes, spare parts, textile, toys]

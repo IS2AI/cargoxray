@@ -1,0 +1,6 @@
+path: ../cargoxray/yolo/
+train: train/images
+val: val/images
+
+nc: 20
+names: [ 'scooter', 'tools', 'spare parts', 'toys', 'shoes', 'textile', 'fabrics', 'tableware', 'car wheels', 'auto parts', 'tires', 'equipment', 'bicycle', 'appliance', 'clothes', 'grape', 'pepper', 'nectarin', 'tomato', 'household goods' ]
