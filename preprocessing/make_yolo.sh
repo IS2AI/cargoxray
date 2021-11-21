@@ -1,1 +1,0 @@
-python /raid/ruslan_bazhenov/projects/xray/cargoxray/utils/make_yolo.py --root_dir /raid/ruslan_bazhenov/projects/xray/cargoxray/data/ --annotations annotations_v4.json.gz --images images_v4.json.gz --output_dir test_yolo/ --selected_classes toys "spare parts" shoes -e -o
