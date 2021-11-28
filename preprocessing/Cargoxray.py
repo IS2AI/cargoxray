@@ -1,12 +1,15 @@
 import hashlib
 import json
 import logging
+import pathlib
 import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+from numpy import empty, select
 
 import pandas as pd
 from PIL import Image, UnidentifiedImageError
+from pandas.core.indexes.range import RangeIndex
 from tqdm import tqdm
 
 import config
@@ -67,18 +70,18 @@ class Cargoxray:
             columns=config.CATEGORIES_FRAME_COLUMNS,
             index=config.CATEGORIES_FRAME_INDEX)
 
-        self._images_next_id = self._images.index.max() + 1 \
+        self._images_next_id = self._images.index.max() + 1\
             if len(self._images) > 0 else 0
 
-        self._annotations_next_id = self._annotations.index.max() + 1 \
+        self._annotations_next_id = self._annotations.index.max() + 1\
             if len(self._annotations) > 0 else 0
 
-        self._categories_next_id = self._categories.index.max() + 1 \
+        self._categories_next_id = self._categories.index.max() + 1\
             if len(self._categories) > 0 else 0
 
     def import_data(self,
                     import_dir: Optional[Union[Path, str]] = None,
-                    empty_images_dir: Optional[Union[Path, str]] = None) \
+                    empty_images_dir: Optional[Union[Path, str]] = None)\
             -> Dict:
         """Import a folder into the dataset. `import_dir` is for annotated 
         images and `empty_images_dir` is for null (empty, background only)
@@ -108,42 +111,6 @@ class Cargoxray:
                 self._import_empty_images(empty_images_dir)
             except Exception as e:
                 logging.error(f'Could import empty images. {e}')
-
-    def export_data(self,
-                    export_dir: Union[Path, str],
-                    selected_labels: Union[List[str], Dict[str, str]]):
-
-        if isinstance(selected_labels, list):
-            selected_labels = {lab: lab for lab in selected_labels}
-
-        selected_categories = {}
-        bad_labels = []
-
-        for k, v in selected_labels.items():
-            kk = self._get_category_id_by_label(k)
-            vv = self._get_category_id_by_label(v)
-
-            if kk is None:
-                bad_labels.append(k)
-            if vv is None:
-                bad_labels.append(v)
-            selected_categories[kk] = vv
-
-        if len(bad_labels) > 0:
-            logging.critical(f'Check labels ["{", ".join(bad_labels)}"]')
-            return None
-        else:
-            del bad_labels
-
-        data = self._annotations.reset_index() \
-            .join(
-                self._images.reset_index(),
-                on='image_id') \
-            .join(self._categories.reset_index(),
-                  on='category_id') \
-            .set_index('id')
-
-        data.loc[data['name'].isin(selected_labels)]
 
     def apply_changes(self):
 
@@ -260,7 +227,7 @@ class Cargoxray:
 
         return img_path
 
-    def _get_image_id_by_path(self, img_path: Union[Path, str]) \
+    def _get_image_id_by_path(self, img_path: Union[Path, str])\
             -> Optional[int]:
 
         img_md5 = self._get_md5(img_path)
@@ -368,6 +335,137 @@ class Cargoxray:
 
         for img_path in empty_images_dir.glob('**/*'):
 
-            if img_path.is_file() \
+            if img_path.is_file()\
                     and img_path.suffix in config.IMAGE_FORMATS:
                 self._add_image(img_path)
+
+    def export_data(self,
+                    export_dir: Union[Path, str],
+                    selected_labels: Union[List[str], Dict[str, str]],
+                    include_empty: bool,
+                    splits_names: List[str],
+                    splits_frac: List[float],
+                    copy_func):
+
+        export_dir = Path(export_dir)
+
+        assert len(splits_names) == len(splits_frac)
+        assert sum(splits_frac) == 1
+
+        selected_categories, categories_mapping =\
+            self._select_categories(selected_labels)
+
+        selected_annotations = self._select_annotations(categories_mapping)
+
+        selected_images = self._images.loc[
+            self._images.index.isin(selected_annotations['image_id'])]
+
+        if include_empty:
+            empty_images = self._images.loc[
+                ~self._images.index.isin(self._annotations['image_id'])]
+
+            selected_images = selected_images.append(empty_images)
+
+        images_splits = utils.split_pd(selected_images, splits_frac)
+
+        splits = [selected_annotations
+                  .join(other=x,
+                        on='image_id',
+                        how='inner')
+                  .join(other=selected_categories,
+                        on='category_id',
+                        how='inner')
+                  for x in images_splits]
+
+        for split, sname in zip(splits, splits_names):
+            self._export_split(split, export_dir / sname, copy_func)
+
+    def _select_categories(
+        self,
+        selected_labels: Union[List[str], Dict[str, str]])\
+            -> Tuple[pd.DataFrame, Dict[int, int]]:
+
+        if isinstance(selected_labels, list):
+            selected_labels = {x: x for x in selected_labels}
+
+        categories_mapping = {
+            self._get_category_id_by_label(k):
+            self._get_category_id_by_label(v)
+            for k, v in selected_labels}
+
+        selected_categories = self._categories.loc[
+            self._categories.index.isin(categories_mapping.keys())]
+
+        old_index = selected_categories.index
+
+        selected_categories = selected_categories.reset_index(drop=True)
+
+        selected_categories.index =\
+            selected_categories.index.rename(old_index.name)
+
+        reindexed = pd.Series(data=selected_categories.index,
+                              index=old_index).to_dict()
+
+        categories_mapping = {k: reindexed[v]
+                              for k, v in categories_mapping.items()}
+
+        return selected_categories, categories_mapping
+
+    def _select_annotations(self, categories_mapping: Dict[int, int])\
+            -> pd.DataFrame:
+
+        ignored_annotations = self._annotations.loc[
+            ~self._annotations['category_id'].isin(categories_mapping.keys())]
+
+        ignored_image_ids = ignored_annotations['image_id'].drop_duplicates()
+
+        selected_annotations = self._annotations.loc[
+            ~self._annotations['image_id'].isin(ignored_image_ids)
+        ]
+
+        assert selected_annotations['category_id'].isin(
+            categories_mapping.keys()).all()
+
+        selected_annotations['category_id'] =\
+            selected_annotations['category_id'].replace(categories_mapping)
+
+        return selected_annotations
+
+    def _export_split(self,
+                      data: pd.DataFrame,
+                      path: pathlib.Path,
+                      copy_func: function):
+
+        image_names = data['file_name'].drop_duplicates()
+
+        for image_name in image_names:
+
+            txt = []
+
+            for _, row in data.loc[
+                    data['file_name'] == image_name].iterrows():
+
+                x, y, w, h = utils.convert_to_yolo(
+                    bbox=(
+                        row['x'],
+                        row['y'],
+                        row['w'],
+                        row['h']
+                    ),
+                    image_shape=(
+                        row['width'],
+                        row['height']
+                    )
+                )
+
+                txt.append("{} {} {} {} {}".format(
+                    row['category_id'],
+                    x, y, w, h
+                ))
+
+            txt = '\n'.join(txt)
+
+            copy_func(self._img_dir / image_name, path / 'images' / image_name)
+
+            Path(path / 'labels' / f'{Path(image_name).stem}.txt')\
+                .write_text(txt)

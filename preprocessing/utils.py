@@ -1,18 +1,19 @@
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
+from numpy import double
 
 import pandas as pd
 from tqdm import tqdm
 
 
-def parse_region(region) \
+def parse_region(region)\
         -> Optional[Tuple[int, int, int, int, Optional[str]]]:
 
     if region is None:
         return None
 
     # Try to indentify bbox shape
-    if region['shape_attributes']['name'] == 'polyline' \
+    if region['shape_attributes']['name'] == 'polyline'\
             or region['shape_attributes']['name'] == 'polygon':
         x_points = region['shape_attributes']['all_points_x']
         y_points = region['shape_attributes']['all_points_y']
@@ -104,3 +105,41 @@ def load_label_replacements(path: Union[str, Path]) -> Dict[str, str]:
                                      ).set_index('original')
 
     return label_replacements['typos'].to_dict()
+
+
+def split_pd(data: Union[pd.DataFrame, pd.Series],
+             weights: List[float])\
+        -> List[Union[pd.DataFrame, pd.Series]]:
+
+    data = data.copy()
+
+    assert sum(weights) == 1
+
+    weights = [round(len(data) * w) for w in weights]
+
+    assert sum(weights) == len(data)
+
+    splits = []
+
+    for w in weights:
+        splits.append(data.sample(n=w))
+        data = pd.concat([data, splits[-1]]).drop_duplicates(keep=False)
+
+    return splits
+
+
+def convert_to_yolo(bbox, image_shape):
+
+    x, y, w, h = bbox
+    iw, ih = image_shape
+
+    x_center = x + w/2
+    y_center = y + h/2
+
+    new_x = x_center / iw
+    new_y = y_center / ih
+
+    new_w = w / iw
+    new_h = h / ih
+
+    return new_x, new_y, new_w, new_h
