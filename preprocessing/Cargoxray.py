@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+from os import R_OK
 import pathlib
 import shutil
 from pathlib import Path
@@ -371,10 +372,12 @@ class Cargoxray:
         splits = [selected_annotations
                   .join(other=x,
                         on='image_id',
-                        how='inner')
+                        how='inner',
+                        rsuffix='img')
                   .join(other=selected_categories,
                         on='category_id',
-                        how='inner')
+                        how='inner',
+                        rsuffix='cat')
                   for x in images_splits]
 
         for split, sname in zip(splits, splits_names):
@@ -385,13 +388,13 @@ class Cargoxray:
         selected_labels: Union[List[str], Dict[str, str]])\
             -> Tuple[pd.DataFrame, Dict[int, int]]:
 
-        if isinstance(selected_labels, list):
+        if not isinstance(selected_labels, dict):
             selected_labels = {x: x for x in selected_labels}
 
         categories_mapping = {
             self._get_category_id_by_label(k):
             self._get_category_id_by_label(v)
-            for k, v in selected_labels}
+            for k, v in selected_labels.items()}
 
         selected_categories = self._categories.loc[
             self._categories.index.isin(categories_mapping.keys())]
@@ -421,7 +424,7 @@ class Cargoxray:
 
         selected_annotations = self._annotations.loc[
             ~self._annotations['image_id'].isin(ignored_image_ids)
-        ]
+        ].copy()
 
         assert selected_annotations['category_id'].isin(
             categories_mapping.keys()).all()
@@ -434,7 +437,10 @@ class Cargoxray:
     def _export_split(self,
                       data: pd.DataFrame,
                       path: pathlib.Path,
-                      copy_func: function):
+                      copy_func):
+
+        path.joinpath('images').mkdir(parents=True)
+        path.joinpath('labels').mkdir(parents=True)
 
         image_names = data['file_name'].drop_duplicates()
 
@@ -449,12 +455,12 @@ class Cargoxray:
                     bbox=(
                         row['x'],
                         row['y'],
-                        row['w'],
-                        row['h']
-                    ),
-                    image_shape=(
                         row['width'],
                         row['height']
+                    ),
+                    image_shape=(
+                        row['widthimg'],
+                        row['heightimg']
                     )
                 )
 
