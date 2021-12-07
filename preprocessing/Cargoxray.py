@@ -5,7 +5,7 @@ from os import R_OK
 import pathlib
 import shutil
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Union
 from numpy import empty, select
 
 import pandas as pd
@@ -14,6 +14,7 @@ from pandas.core.indexes.range import RangeIndex
 from tqdm import tqdm
 
 import config
+import random
 import utils
 
 
@@ -84,7 +85,7 @@ class Cargoxray:
                     import_dir: Optional[Union[Path, str]] = None,
                     empty_images_dir: Optional[Union[Path, str]] = None)\
             -> Dict:
-        """Import a folder into the dataset. `import_dir` is for annotated 
+        """Import a folder into the dataset. `import_dir` is for annotated
         images and `empty_images_dir` is for null (empty, background only)
         images. At least one of two arguments must be provided.
         Returns a statistics on the imported images and annotations.
@@ -353,125 +354,167 @@ class Cargoxray:
         assert len(splits_names) == len(splits_frac)
         assert sum(splits_frac) == 1
 
-        selected_categories, categories_mapping =\
+        # Same structure as self._categories
+        # but has additional field "yolo_id"
+        # ["id" (index), "name", "yolo_id"]
+
+        categories =\
             self._select_categories(selected_labels)
 
-        selected_annotations = self._select_annotations(categories_mapping)
+        image_ids = self._select_images(
+            categories,
+            include_empty)
 
-        selected_images = self._images.loc[
-            self._images.index.isin(selected_annotations['image_id'])]
+        image_splits = utils.split(
+            image_ids,
+            splits_frac)
+
+        for split, sname in zip(image_splits, splits_names):
+
+            split_path = export_dir.joinpath(sname)
+            split_path.joinpath('images').mkdir(parents=True)
+            split_path.joinpath('labels').mkdir(parents=True)
+
+            for image_id in split:
+                self._export_yolo_image(
+                    image_id,
+                    split_path,
+                    copy_func,
+                    categories)
+
+        self._export_yolo_config(export_dir,
+                                 splits_names,
+                                 categories)
+
+    def _select_categories(
+        self,
+        labels: Union[List[str], Dict[str, str]])\
+            -> pd.DataFrame:
+
+        if not isinstance(labels, dict):
+            labels = {x: x for x in labels}
+
+        categories = pd.DataFrame(
+            data={'name': labels.values()},
+            index=labels.keys()
+        )
+        categories['yolo_id'] = pd.RangeIndex(
+            start=0,
+            stop=len(categories.drop_duplicates('name')))
+
+        return categories
+
+    def _select_images(self,
+                       categories: pd.DataFrame,
+                       include_empty: bool = False) -> List[int]:
+
+        category_ids = categories.index.tolist()
+
+        ignored_annotations = self._annotations.loc[
+            ~self._annotations['category_id'].isin(category_ids)]
+
+        ignored_image_ids = ignored_annotations['image_id'].drop_duplicates()
+
+        selected_annotations = self._annotations.loc[
+            ~self._annotations['image_id'].isin(ignored_image_ids)]
+
+        assert selected_annotations['category_id'].isin(category_ids).all()
+
+        selected_images = selected_annotations['image_id']
 
         if include_empty:
             empty_images = self._images.loc[
                 ~self._images.index.isin(self._annotations['image_id'])]
 
-            selected_images = selected_images.append(empty_images)
+            selected_images.append(empty_images)
 
-        images_splits = utils.split_pd(selected_images, splits_frac)
+        return selected_images.drop_duplicates().to_list()
 
-        splits = [selected_annotations
-                  .join(other=x,
-                        on='image_id',
-                        how='inner',
-                        rsuffix='img')
-                  .join(other=selected_categories,
-                        on='category_id',
-                        how='inner',
-                        rsuffix='cat')
-                  for x in images_splits]
+    def _export_yolo_config(self,
+                            path: Path,
+                            splits_names: List[str],
+                            categories: pd.DataFrame):
 
-        for split, sname in zip(splits, splits_names):
-            self._export_split(split, export_dir / sname, copy_func)
+        categories = categories.sort_values('yolo_id')
 
-    def _select_categories(
-        self,
-        selected_labels: Union[List[str], Dict[str, str]])\
-            -> Tuple[pd.DataFrame, Dict[int, int]]:
+        config_path = path.joinpath('dataset.yaml')
 
-        if not isinstance(selected_labels, dict):
-            selected_labels = {x: x for x in selected_labels}
+        # path: /raid/ruslan_bazhenov/projects/xray/cargoxray/data/test_yolo
+        # train: train/images
+        # val: val/images
+        # nc: 3
+        # names: [shoes, spare parts, toys]
 
-        categories_mapping = {
-            self._get_category_id_by_label(k):
-            self._get_category_id_by_label(v)
-            for k, v in selected_labels.items()}
+        config = {}
 
-        selected_categories = self._categories.loc[
-            self._categories.index.isin(categories_mapping.keys())]
+        config['path'] = path.absolute().as_posix()
 
-        old_index = selected_categories.index
+        for sname in splits_names:
+            config[sname] = f'{sname}/images'
 
-        selected_categories = selected_categories.reset_index(drop=True)
+        config['nc'] = len(categories)
+        config['names'] = ''
 
-        selected_categories.index =\
-            selected_categories.index.rename(old_index.name)
+        config_path.write_text(
+            '\n'.join([f'{k}: {v}'
+                       for k, v in config.items()]))
 
-        reindexed = pd.Series(data=selected_categories.index,
-                              index=old_index).to_dict()
+    def _export_yolo_image(self,
+                           image_id: int,
+                           path: Path,
+                           copy_func,
+                           categories: pd.DataFrame):
 
-        categories_mapping = {k: reindexed[v]
-                              for k, v in categories_mapping.items()}
+        image_info = self._images.loc[self._images.index == image_id].iloc[0]
 
-        return selected_categories, categories_mapping
+        yolo_text = self._make_yolo_text(image_info,
+                                         categories)
 
-    def _select_annotations(self, categories_mapping: Dict[int, int])\
-            -> pd.DataFrame:
+        image_path = path.joinpath(
+            'images',
+            image_info['file_name'])
 
-        ignored_annotations = self._annotations.loc[
-            ~self._annotations['category_id'].isin(categories_mapping.keys())]
+        text_path = path.joinpath(
+            'labels',
+            f'{image_path.stem}.txt')
 
-        ignored_image_ids = ignored_annotations['image_id'].drop_duplicates()
+        text_path.write_text(yolo_text)
+        copy_func(self._img_dir / image_path.name,
+                  image_path)
 
-        selected_annotations = self._annotations.loc[
-            ~self._annotations['image_id'].isin(ignored_image_ids)
-        ].copy()
+    def _make_yolo_text(self,
+                        image_info: pd.Series,
+                        categories: pd.DataFrame) -> str:
 
-        assert selected_annotations['category_id'].isin(
-            categories_mapping.keys()).all()
+        txt = []
 
-        selected_annotations['category_id'] =\
-            selected_annotations['category_id'].replace(categories_mapping)
+        sel = self._annotations.loc[
+            self._annotations['image_id'] == image_info.name]
 
-        return selected_annotations
+        sel = sel.join(categories,
+                       on='category_id',
+                       how='inner')
 
-    def _export_split(self,
-                      data: pd.DataFrame,
-                      path: pathlib.Path,
-                      copy_func):
+        for _, row in sel.iterrows():
 
-        path.joinpath('images').mkdir(parents=True)
-        path.joinpath('labels').mkdir(parents=True)
-
-        image_names = data['file_name'].drop_duplicates()
-
-        for image_name in image_names:
-
-            txt = []
-
-            for _, row in data.loc[
-                    data['file_name'] == image_name].iterrows():
-
-                x, y, w, h = utils.convert_to_yolo(
-                    bbox=(
-                        row['x'],
-                        row['y'],
-                        row['width'],
-                        row['height']
-                    ),
-                    image_shape=(
-                        row['widthimg'],
-                        row['heightimg']
-                    )
+            x, y, w, h = utils.convert_to_yolo(
+                bbox=(
+                    row['x'],
+                    row['y'],
+                    row['width'],
+                    row['height']
+                ),
+                image_shape=(
+                    image_info['width'],
+                    image_info['height']
                 )
+            )
 
-                txt.append("{} {} {} {} {}".format(
-                    row['category_id'],
-                    x, y, w, h
-                ))
+            txt.append("{} {} {} {} {}".format(
+                row['yolo_id'],
+                x, y, w, h
+            ))
 
-            txt = '\n'.join(txt)
+        txt = '\n'.join(txt) + '\n'
 
-            copy_func(self._img_dir / image_name, path / 'images' / image_name)
-
-            Path(path / 'labels' / f'{Path(image_name).stem}.txt')\
-                .write_text(txt)
+        return txt

@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     selected_labels = []
 
-    dataset.export_data(export_dir='test_export',
+    dataset.export_data(export_dir='preprocessing/test',
                         selected_labels=selected_labels,
                         include_empty=True,
                         splits_names=['train', 'val'],

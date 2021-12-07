@@ -4,6 +4,7 @@ from numpy import double
 
 import pandas as pd
 from tqdm import tqdm
+import random
 
 
 def parse_region(region)\
@@ -107,23 +108,23 @@ def load_label_replacements(path: Union[str, Path]) -> Dict[str, str]:
     return label_replacements['typos'].to_dict()
 
 
-def split_pd(data: Union[pd.DataFrame, pd.Series],
-             weights: List[float])\
-        -> List[Union[pd.DataFrame, pd.Series]]:
-
-    data = data.copy()
+def split(data: List,
+          weights: List[float]) -> List:
 
     assert sum(weights) == 1
 
-    weights = [round(len(data) * w) for w in weights]
+    data = data.copy()
+    random.shuffle(data)
 
-    assert sum(weights) == len(data)
+    indices = [round(len(data) * w) for w in weights]
 
-    splits = []
+    assert sum(indices) == len(data)
 
-    for w in weights:
-        splits.append(data.sample(n=w))
-        data = pd.concat([data, splits[-1]]).drop_duplicates(keep=False)
+    for i in range(1, len(indices)):
+        indices[i] += indices[i - 1]
+
+    splits = [data[(0 if i == 0 else indices[i-1]):indices[i]]
+              for i in range(len(indices))]
 
     return splits
 
