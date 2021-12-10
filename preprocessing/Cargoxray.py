@@ -357,6 +357,9 @@ class Cargoxray:
         # Same structure as self._categories
         # but has additional field "yolo_id"
         # ["id" (index), "name", "yolo_id"]
+        # "id" is an original category id
+        # "name" is the new name according to selected_labels
+        # "yolo_id" is new id, generated after renaming with selected_labels
 
         categories =\
             self._select_categories(selected_labels)
@@ -371,16 +374,11 @@ class Cargoxray:
 
         for split, sname in zip(image_splits, splits_names):
 
-            split_path = export_dir.joinpath(sname)
-            split_path.joinpath('images').mkdir(parents=True)
-            split_path.joinpath('labels').mkdir(parents=True)
-
-            for image_id in split:
-                self._export_yolo_image(
-                    image_id,
-                    split_path,
-                    copy_func,
-                    categories)
+            self._export_yolo_images(
+                split,
+                export_dir / sname,
+                copy_func,
+                categories)
 
         self._export_yolo_config(export_dir,
                                  splits_names,
@@ -394,13 +392,23 @@ class Cargoxray:
         if not isinstance(labels, dict):
             labels = {x: x for x in labels}
 
-        categories = pd.DataFrame(
-            data={'name': labels.values()},
-            index=labels.keys()
-        )
-        categories['yolo_id'] = pd.RangeIndex(
-            start=0,
-            stop=len(categories.drop_duplicates('name')))
+        # Select categories by dictionary keys
+        categories = self._categories.loc[
+            self._categories['name'].isin(labels.keys())
+        ]
+
+        # Rename categories names according to dictionary
+        categories['name'] = categories['name'].map(labels)
+
+        # Generate YOLO id
+        categories = categories.merge(
+            right=categories[['name']]
+            .drop_duplicates()
+            .reset_index(drop=True)
+            .reset_index()
+            .rename(columns={'index': 'yolo_id'}),
+            on='name',
+            how='inner')
 
         return categories
 
@@ -452,35 +460,46 @@ class Cargoxray:
         for sname in splits_names:
             config[sname] = f'{sname}/images'
 
-        config['nc'] = len(categories)
-        config['names'] = ''
+        config['nc'] = str(len(categories))
+        config['names'] = '[{}]'.format(', '.join(
+            categories
+            .drop_duplicates('yolo_id')
+            .sort_values('yolo_id')['name'].to_list()
+        )
+        )
 
         config_path.write_text(
             '\n'.join([f'{k}: {v}'
                        for k, v in config.items()]))
 
-    def _export_yolo_image(self,
-                           image_id: int,
-                           path: Path,
-                           copy_func,
-                           categories: pd.DataFrame):
+    def _export_yolo_images(self,
+                            image_ids: int,
+                            path: Path,
+                            copy_func,
+                            categories: pd.DataFrame):
 
-        image_info = self._images.loc[self._images.index == image_id].iloc[0]
+        path.joinpath('images').mkdir(parents=True)
+        path.joinpath('labels').mkdir(parents=True)
 
-        yolo_text = self._make_yolo_text(image_info,
-                                         categories)
+        for image_id in image_ids:
 
-        image_path = path.joinpath(
-            'images',
-            image_info['file_name'])
+            image_info = self._images.loc[self._images.index ==
+                                          image_id].iloc[0]
 
-        text_path = path.joinpath(
-            'labels',
-            f'{image_path.stem}.txt')
+            yolo_text = self._make_yolo_text(image_info,
+                                             categories)
 
-        text_path.write_text(yolo_text)
-        copy_func(self._img_dir / image_path.name,
-                  image_path)
+            image_path = path.joinpath(
+                'images',
+                image_info['file_name'])
+
+            text_path = path.joinpath(
+                'labels',
+                f'{image_path.stem}.txt')
+
+            text_path.write_text(yolo_text)
+            copy_func(self._img_dir / image_path.name,
+                      image_path)
 
     def _make_yolo_text(self,
                         image_info: pd.Series,
