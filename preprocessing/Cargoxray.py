@@ -401,14 +401,15 @@ class Cargoxray:
         categories['name'] = categories['name'].map(labels)
 
         # Generate YOLO id
-        categories = categories.merge(
+        categories = categories.reset_index().merge(
             right=categories[['name']]
             .drop_duplicates()
             .reset_index(drop=True)
             .reset_index()
             .rename(columns={'index': 'yolo_id'}),
             on='name',
-            how='inner')
+            how='inner')\
+            .set_index('category_id')
 
         return categories
 
@@ -434,7 +435,8 @@ class Cargoxray:
             empty_images = self._images.loc[
                 ~self._images.index.isin(self._annotations['image_id'])]
 
-            selected_images.append(empty_images)
+            selected_images = selected_images.append(
+                pd.Series(empty_images.index))
 
         return selected_images.drop_duplicates().to_list()
 
@@ -442,6 +444,9 @@ class Cargoxray:
                             path: Path,
                             splits_names: List[str],
                             categories: pd.DataFrame):
+
+        if not path.exists():
+            path.mkdir(parents=True)
 
         categories = categories.sort_values('yolo_id')
 
@@ -460,7 +465,7 @@ class Cargoxray:
         for sname in splits_names:
             config[sname] = f'{sname}/images'
 
-        config['nc'] = str(len(categories))
+        config['nc'] = str(len(categories.drop_duplicates('yolo_id')))
         config['names'] = '[{}]'.format(', '.join(
             categories
             .drop_duplicates('yolo_id')
