@@ -210,8 +210,8 @@ class Cargoxray:
                 'image_id': image_id,
                 'x': bbox[0],
                 'y': bbox[1],
-                'width': bbox[2],
-                'height': bbox[3],
+                'w': bbox[2],
+                'h': bbox[3],
                 'category_id': category_id
             })
         self._annotations_next_id += 1
@@ -296,7 +296,10 @@ class Cargoxray:
 
     def _get_category_id_by_label(self, label: str) -> int:
 
-        sel = self._categories.loc[self._categories['name'] == label]
+        if label is None:
+            sel = self._categories.loc[self._categories['name'].isna()]
+        else:
+            sel = self._categories.loc[self._categories['name'] == label]
 
         if len(sel) > 0:
             category_id = sel.iloc[0].name
@@ -319,6 +322,33 @@ class Cargoxray:
             is_new = True
 
         return category_id
+
+    def _rename_categories(self, mapping: Dict[str, str]):
+
+        self._categories['name'] = self._categories['name'].replace(mapping)
+
+        z = self._categories.drop_duplicates('name')\
+            .reset_index(drop=True)\
+            .reset_index()\
+            .merge(
+                self._categories
+                .reset_index(),
+                on='name',
+                how='inner')\
+            .rename(columns={
+                self._categories.index.name: 'old_index',
+                'index': 'category_id'
+            })
+
+        self._annotations['category_id'] =\
+            self._annotations['category_id'].replace(
+                z.set_index('old_index')['category_id'].to_dict())
+
+        self._categories = z\
+            .set_index(self._categories.index.name)\
+            .drop(columns='old_index')\
+            .drop_duplicates()\
+            .sort_index()
 
     def _append_new_category(self, label: str) -> pd.Series:
 
@@ -525,8 +555,8 @@ class Cargoxray:
                 bbox=(
                     row['x'],
                     row['y'],
-                    row['width'],
-                    row['height']
+                    row['w'],
+                    row['h']
                 ),
                 image_shape=(
                     image_info['width'],

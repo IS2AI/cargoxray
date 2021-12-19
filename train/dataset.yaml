@@ -1,6 +1,5 @@
-path: ../cargoxray/yolo/
+path: /raid/ruslan_bazhenov/projects/xray/cargoxray/yolo_dataset
 train: train/images
 val: val/images
-
-nc: 20
-names: [ 'scooter', 'tools', 'spare parts', 'toys', 'shoes', 'textile', 'fabrics', 'tableware', 'car wheels', 'auto parts', 'tires', 'equipment', 'bicycle', 'appliance', 'clothes', 'grape', 'pepper', 'nectarin', 'tomato', 'household goods' ]
+nc: 7
+names: [textile, fabrics, toys, shoes, spare_parts, clothes, tires]

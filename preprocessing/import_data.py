@@ -8,7 +8,7 @@ if __name__ == '__main__':
                         categories_json_path='data/v3/categories.json.gz')
 
     dataset.import_data(
-        import_dir='/raid/ruslan_bazhenov/projects/xray/cargoxray/data/images',
+        # import_dir='/raid/ruslan_bazhenov/projects/xray/cargoxray/data/images',
         empty_images_dir='/raid/ruslan_bazhenov/projects/xray/cargoxray/data/images/empty'
     )
 

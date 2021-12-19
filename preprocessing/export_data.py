@@ -20,16 +20,16 @@ if __name__ == '__main__':
     #     'tires': 'tires'
     # }
 
-    selected_labels = [
-        'shoes',
-        'textile',
-        'spare parts',
-        'clothes',
-        'fabrics',
-        'toys',
-        'auto parts',
-        'tires'
-    ]
+    selected_labels = {
+        'shoes': 'shoes',
+        'spare_parts': 'spare_parts',
+        'clothes': 'clothes',
+        'textile': 'textile',
+        'toys': 'toys',
+        'fabrics': 'fabrics',
+        'tires': 'tires',
+        'auto_parts': 'spare_parts'
+    }
 
     dataset.export_data(export_dir='yolo_dataset/',
                         selected_labels=selected_labels,
