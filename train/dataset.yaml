@@ -1,4 +1,4 @@
-path: /raid/ruslan_bazhenov/projects/xray/cargoxray/yolo_dataset
+path: /raid/ruslan_bazhenov/projects/xray/cargoxray/data/yolo_slices/merged1
 train: train/images
 val: val/images
 nc: 7

@@ -7,7 +7,3 @@ __pycache__
 data
 *.log
 *.bak
-
-yolo_dataset
-new_runs
-.netrc

@@ -114,6 +114,9 @@ class Cargoxray:
             except Exception as e:
                 logging.error(f'Could import empty images. {e}')
 
+        self._annotations = self._annotations.drop_duplicates()
+        self._images = self._images.drop_duplicates()
+
     def apply_changes(self):
 
         if not self._img_dir.exists():
