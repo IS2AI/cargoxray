@@ -1,4 +1,5 @@
 [core]
-    remote = gdrive
-['remote "gdrive"']
-    url = gdrive://1rUe_5Mmjwv7sCKo3Ue3BaSoIXI3RVir9
+    remote = origin
+    autostage = true
+['remote "origin"']
+    url = gdrive://1-F68bss2OGj0g6Zy4Gayf1jAr9grmC47

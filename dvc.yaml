@@ -6,3 +6,12 @@ stages:
     - src/utils/preprocessing
     outs:
     - prepared_data
+  train:
+    cmd: sh train_in_docker.sh
+    deps:
+    - prepared_data
+    - src/utils/yolov5
+    outs:
+    - models/model.pt
+    metrics:
+    - models/metrics.json
