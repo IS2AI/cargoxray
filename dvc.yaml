@@ -1,0 +1,8 @@
+stages:
+  select_and_export:
+    cmd: python src/utils/preprocessing/export_data.py
+    deps:
+    - data
+    - src/utils/preprocessing
+    outs:
+    - prepared_data
