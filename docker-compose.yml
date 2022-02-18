@@ -1,0 +1,12 @@
+services:
+  train:
+    build: .
+    volumes:
+      - /raid/ruslan_bazhenov:/raid/ruslan_bazhenov
+      - /raid/ruslan_bazhenov/projects/xray/:.
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
