@@ -19,7 +19,7 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # Copy contents
-COPY src/utils/yolov5 /usr/src/app
+COPY src/model/yolov5 /usr/src/app
 
 # Downloads to user config dir
 ADD https://ultralytics.com/assets/Arial.ttf /root/.config/Ultralytics/
@@ -66,5 +66,5 @@ ADD https://ultralytics.com/assets/Arial.ttf /root/.config/Ultralytics/
 
 FROM yolov5
 
-ADD models /usr/src/app/docker_bind
+ADD models /usr/src/app/user_data
 ADD src/train.sh /usr/src/app/
