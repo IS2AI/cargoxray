@@ -17,3 +17,9 @@ stages:
     - models/weights
     - models/samples
     - models/metrics
+  test_stage:
+    cmd: nvidia-smi
+    params:
+    - models/params/hyp.yaml
+    outs:
+    - test_folder
