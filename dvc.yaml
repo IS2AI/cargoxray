@@ -13,6 +13,8 @@ stages:
     - models/params
     - src/utils/yolov5
     - src/train.sh
+    params:
+    - models/params/hyp.yaml
     outs:
     - models/weights
     - models/samples
