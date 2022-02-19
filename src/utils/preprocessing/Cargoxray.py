@@ -493,7 +493,7 @@ class Cargoxray:
 
         config = {}
 
-        config['path'] = path.absolute().as_posix()
+        config['path'] = path.as_posix()
 
         for sname in splits_names:
             config[sname] = f'{sname}/images'
