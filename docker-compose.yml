@@ -11,13 +11,5 @@ services:
                       count: 1
                       capabilities: [ gpu ]
         command: >
-            sh -c "python train.py \
-                    --weights yolov5s6.pt \
-                    --data cargoxray/prepared_data/dataset.yaml \
-                    --hyp cargoxray/models/hyp.yaml \
-                    --epochs 100 \
-                    --batch-size 32 \
-                    --imgsz 1024 \
-                    --device 0 \
-                    --cache &&
+            sh -c "sh train.sh && 
                    chown 1051:1051 -R runs"

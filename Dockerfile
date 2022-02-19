@@ -66,9 +66,5 @@ ADD https://ultralytics.com/assets/Arial.ttf /root/.config/Ultralytics/
 
 FROM yolov5
 
-ADD models/hyp.yaml /usr/src/app/
-ADD models/dataset.yaml /usr/src/app/
-
+ADD models /usr/src/app/docker_bind
 ADD src/train.sh /usr/src/app/
-
-ENTRYPOINT [ "sh", "train.sh"]
