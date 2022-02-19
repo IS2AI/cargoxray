@@ -1,12 +1,16 @@
 services:
-  train:
-    build: .
-    volumes:
-      - /raid/ruslan_bazhenov:/raid/ruslan_bazhenov
-      - /raid/ruslan_bazhenov/projects/xray/:.
-    resources:
-      reservations:
-        devices:
-          - driver: nvidia
-            count: 1
-            capabilities: [gpu]
+    train:
+        build: .
+        volumes:
+            - ./models:/usr/src/app/output
+        runtime: nvidia
+        resources:
+            reservations:
+                devices:
+                    - driver: nvidia
+                      count: 1
+                      capabilities: [ gpu ]
+        command: >
+            sh -c "python manage.py wait_for_db &&
+                   python manage.py migrate &&
+                   python manage.py runserver 0.0.0.0:8000"

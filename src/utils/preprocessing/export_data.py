@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # selected_labels = list(selected_labels.keys())
 
-    dataset.export_data(export_dir='data/yolo_slices/merged_notires_auto',
+    dataset.export_data(export_dir='prepared_data',
                         selected_labels=selected_labels,
                         include_empty=True,
                         splits_names=['train', 'val'],

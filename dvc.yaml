@@ -7,7 +7,7 @@ stages:
     outs:
     - prepared_data
   train:
-    cmd: sh train_in_docker.sh
+    cmd: docker-compose up
     deps:
     - prepared_data
     - src/utils/yolov5
