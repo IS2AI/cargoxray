@@ -1,7 +1,7 @@
 python train.py \
 --weights yolov5s6.pt \
---data /raid/ruslan_bazhenov/projects/xray/cargoxray/data/yolo_slices/unmerged_notires_auto/dataset.yaml \
---hyp hyp.yaml \
+--data cargoxray/prepared_data/dataset.yaml \
+--hyp cargoxray/models/hyp.yaml \
 --epochs 100 \
 --batch-size 32 \
 --imgsz 1024 \
