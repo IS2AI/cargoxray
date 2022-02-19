@@ -14,8 +14,16 @@ stages:
     - src/utils/yolov5
     - src/train.sh
     params:
-    - models/params/hyp.yaml
+    - models/params/hyp.yaml:
+        - lr
+        - mixup
     outs:
     - models/weights
     - models/samples
     - models/metrics
+  test_stage:
+    cmd: nvidia-smi
+    params:
+    - models/params/hyp.yaml
+    outs:
+    - test_folder
