@@ -14,7 +14,9 @@ stages:
     - src/utils/yolov5
     - src/train.sh
     params:
-    - models/params/hyp.yaml
+    - models/params/hyp.yaml:
+        - lr
+        - mixup
     outs:
     - models/weights
     - models/samples
