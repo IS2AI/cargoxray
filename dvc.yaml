@@ -10,8 +10,10 @@ stages:
     cmd: docker-compose up
     deps:
     - prepared_data
+    - models/params
     - src/utils/yolov5
+    - src/train.sh
     outs:
-    - models/model.pt
-    metrics:
-    - models/metrics.json
+    - models/weights
+    - models/samples
+    - models/metrics
