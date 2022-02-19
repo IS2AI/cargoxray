@@ -7,4 +7,5 @@ __pycache__
 data
 *.log
 *.bak
-/prepared_data
+prepared_data/
+models/
