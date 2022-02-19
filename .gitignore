@@ -4,9 +4,16 @@ __pycache__
 .DS_Store
 *.code-workspace
 
-data
+/data
+/prepared_data
+/models
+
 *.log
 *.bak
 prepared_data/
 models/
 /test_folder
+
+
+/old_data
+/train
