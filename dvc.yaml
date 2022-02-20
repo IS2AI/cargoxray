@@ -11,12 +11,7 @@ stages:
     deps:
     - prepared_data
     - models/params
-    - src/utils/yolov5
-    - src/train.sh
-    params:
-    - models/params/hyp.yaml:
-        - lr
-        - mixup
+    - src/model
     outs:
     - models/weights
     - models/samples
