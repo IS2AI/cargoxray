@@ -16,7 +16,7 @@ stages:
     outs:
     - models/results
     params:
-    - modes/params/hyp.yaml:
+    - models/params/hyp.yaml:
       - anchor_t
       - box
       - cls
