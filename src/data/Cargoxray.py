@@ -493,7 +493,7 @@ class Cargoxray:
 
         config = {}
 
-        config['path'] = path.as_posix()
+        config['path'] = Path('/usr/src/app/').joinpath(path).as_posix()
 
         for sname in splits_names:
             config[sname] = f'{sname}/images'
