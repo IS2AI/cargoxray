@@ -55,7 +55,7 @@ class Cargoxray:
         self._cache_ref = {}
 
         self._label_replacements = utils.load_label_replacements(
-            'preprocessing/label_mappings_fix.csv')
+            'src/data/label_mappings_fix.csv')
 
         self._images = utils.load_or_create_frame(
             path=self._images_json_path,

@@ -1,9 +1,9 @@
 stages:
   select_and_export:
-    cmd: python src/utils/preprocessing/export_data.py
+    cmd: python src/data/export_data.py
     deps:
     - data
-    - src/utils/preprocessing
+    - src/data
     outs:
     - prepared_data
   train:
@@ -21,9 +21,3 @@ stages:
     - models/weights
     - models/samples
     - models/metrics
-  test_stage:
-    cmd: nvidia-smi
-    params:
-    - models/params/hyp.yaml
-    outs:
-    - test_folder
