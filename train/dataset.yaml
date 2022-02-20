@@ -1,5 +1,0 @@
-path: /raid/ruslan_bazhenov/projects/xray/cargoxray/data/yolo_slices/merged1
-train: train/images
-val: val/images
-nc: 7
-names: [textile, fabrics, toys, shoes, spare_parts, clothes, tires]

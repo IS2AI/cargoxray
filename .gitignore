@@ -4,6 +4,8 @@ __pycache__
 .DS_Store
 *.code-workspace
 
-data
 *.log
 *.bak
+
+/data
+/prepared_data
