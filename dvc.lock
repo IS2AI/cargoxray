@@ -13,9 +13,9 @@ stages:
       nfiles: 12
     outs:
     - path: prepared_data
-      md5: b11fc82655889d61b5488504c39ebe03.dir
-      size: 56062550324
-      nfiles: 22127
+      md5: debc332c3ffa8dca49599ad76e7f7972.dir
+      size: 56064942199
+      nfiles: 22129
   train:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
       --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
