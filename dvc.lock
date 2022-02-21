@@ -18,8 +18,8 @@ stages:
       nfiles: 22129
   train:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
-      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
-      64 --imgsz 1024 --device 0 --project models --name results --cache
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
     deps:
     - path: prepared_data
       md5: debc332c3ffa8dca49599ad76e7f7972.dir
@@ -52,7 +52,7 @@ stages:
         obj: 0.7
         obj_pw: 1.0
         perspective: 0.0
-        scale: 0.6
+        scale: 0.5
         shear: 3.0
         translate: 0.1
         warmup_bias_lr: 0.1
@@ -61,6 +61,6 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/results
-      md5: 7a8ee0471c4d1a1b941bb8159f0d42ab.dir
-      size: 56063191
+      md5: dbbbda234869866fea630c4b32a85497.dir
+      size: 57071721
       nfiles: 23
