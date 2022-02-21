@@ -3,7 +3,11 @@ stages:
     cmd: python src/data/export_data.py
     deps:
     - data
-    - src/data
+    - src/data/Cargoxray.py
+    - src/data/config.py
+    - src/data/label_mappings_fix.csv
+    - src/data/export_data.py
+    - src/data/utils.py
     outs:
     - prepared_data
   train:
