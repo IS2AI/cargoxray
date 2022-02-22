@@ -4,27 +4,38 @@ stages:
     cmd: python src/data/export_data.py
     deps:
     - path: data
-      md5: 1d850eb0bf57dcccac08e7c504a47520.dir
-      size: 96477855929
-      nfiles: 17396
-    - path: src/data
-      md5: e8627c3ca1ddcf2079b9b71cf4d64f72.dir
-      size: 60634
-      nfiles: 12
+      md5: ccf701575ceca81313792e4e722a6418.dir
+      size: 101642784629
+      nfiles: 17782
+    - path: src/data/Cargoxray.py
+      md5: 153833faa1e5a3546e372c0afec7af5f
+      size: 18212
+    - path: src/data/config.py
+      md5: 6c915b47555939aa1a1c920d7acb5f07
+      size: 797
+    - path: src/data/export_data.py
+      md5: 55d9bcae15f30e0e1fe88894804b6184
+      size: 1258
+    - path: src/data/label_mappings_fix.csv
+      md5: 905e2b9690f176b443a12d2edbbfa3f7
+      size: 3239
+    - path: src/data/utils.py
+      md5: e3b25979b2312997ddf238bb30cb73dd
+      size: 3525
     outs:
     - path: prepared_data
-      md5: debc332c3ffa8dca49599ad76e7f7972.dir
-      size: 56064942199
-      nfiles: 22129
+      md5: 89626728a1e0813e12e9516157e7cd5a.dir
+      size: 61227474965
+      nfiles: 22899
   train:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
       --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
       --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
     deps:
     - path: prepared_data
-      md5: debc332c3ffa8dca49599ad76e7f7972.dir
-      size: 56064942199
-      nfiles: 22129
+      md5: a53f69dad722de8ac5cca81a24ef21d3.dir
+      size: 61229950352
+      nfiles: 22901
     - path: src/model
       md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
       size: 1520689
@@ -61,6 +72,6 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/results
-      md5: dbbbda234869866fea630c4b32a85497.dir
-      size: 57071721
+      md5: f279f48217340e2be7a1aa5cf8832d84.dir
+      size: 57220268
       nfiles: 23
