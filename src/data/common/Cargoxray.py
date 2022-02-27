@@ -13,9 +13,9 @@ from PIL import Image, UnidentifiedImageError
 from pandas.core.indexes.range import RangeIndex
 from tqdm import tqdm
 
-import config
+from common import config
 import random
-import utils
+from common import utils
 
 
 class Cargoxray:
@@ -55,7 +55,7 @@ class Cargoxray:
         self._cache_ref = {}
 
         self._label_replacements = utils.load_label_replacements(
-            'src/data/label_mappings_fix.csv')
+            'src/data/common/label_mappings_fix.csv')
 
         self._images = utils.load_or_create_frame(
             path=self._images_json_path,

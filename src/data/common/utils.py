@@ -69,6 +69,16 @@ def load_or_create_frame(path, columns, index) -> pd.DataFrame:
 
 
 def make_ref_cache(path) -> Dict[str, Path]:
+    """Generates reference lookup table for faster search of files.
+    Reference is concatenation of filename and its size. Build dictionary 
+    reference to file path.
+
+    Args:
+        path (_type_): Root dir to build reference
+
+    Returns:
+        Dict[str, Path]: Reference to file path.
+    """
 
     cache: Dict[str, Path] = {}
 
@@ -111,20 +121,21 @@ def load_label_replacements(path: Union[str, Path]) -> Dict[str, str]:
 def split(data: List,
           weights: List[float]) -> List:
 
+    data = data.copy()
+    weights = weights.copy()
+
     assert sum(weights) == 1
 
-    data = data.copy()
-    random.shuffle(data)
+    for i in range(1, len(weights)):
+        weights[i] += weights[i - 1]
+    
+    splits = [[] for i in range(len(weights))]
 
-    indices = [round(len(data) * w) for w in weights]
-
-    assert sum(indices) == len(data)
-
-    for i in range(1, len(indices)):
-        indices[i] += indices[i - 1]
-
-    splits = [data[(0 if i == 0 else indices[i-1]):indices[i]]
-              for i in range(len(indices))]
+    for i in data:
+        for bucket, w in enumerate(weights):
+            if i % 100 <= w * 100:
+                splits[bucket].append(i)
+                break
 
     return splits
 

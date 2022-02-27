@@ -1,4 +1,4 @@
-from Cargoxray import Cargoxray
+from common.Cargoxray import Cargoxray
 import shutil
 import os
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # selected_labels = list(selected_labels.keys())
 
-    dataset.export_data(export_dir='prepared_data',
+    dataset.export_data(export_dir='prepared_data_test',
                         selected_labels=selected_labels,
                         include_empty=True,
                         splits_names=['train', 'val'],
