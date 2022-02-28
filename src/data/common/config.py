@@ -23,6 +23,4 @@ LABEL_REPLACEMENTS_PATH = 'label_mappings_fix.csv'
 
 IMAGE_FORMATS = {'.tif', '.tiff', '.jpg', '.jpeg'}
 
-TRAIN_RATIO = 0.75
-VAL_RATIO = 0.15
-TEST_RATIO = 0.10
+TRAIN_VAL_RATIO = 0.85

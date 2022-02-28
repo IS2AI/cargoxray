@@ -1,4 +1,4 @@
-from Cargoxray import Cargoxray
+from common.Cargoxray import Cargoxray
 
 if __name__ == '__main__':
 

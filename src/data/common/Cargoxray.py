@@ -269,9 +269,9 @@ class Cargoxray:
         image = Image.open(img_path)
         image.verify()
 
-        subset = utils.getRandomSubset(config.TRAIN_RATIO,
-                                       config.VAL_RATIO,
-                                       config.TEST_RATIO)
+        subset = 'train' \
+            if random.random() <= config.TRAIN_VAL_RATIO \
+            else 'val'
 
         new_image = pd.Series(
             name=image_id,
