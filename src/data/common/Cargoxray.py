@@ -384,14 +384,9 @@ class Cargoxray:
                     export_dir: Union[Path, str],
                     selected_labels: Union[List[str], Dict[str, str]],
                     include_empty: bool,
-                    splits_names: List[str],
-                    splits_frac: List[float],
                     copy_func):
 
         export_dir = Path(export_dir)
-
-        assert len(splits_names) == len(splits_frac)
-        assert sum(splits_frac) == 1
 
         # Same structure as self._categories
         # but has additional field "yolo_id"
@@ -407,9 +402,15 @@ class Cargoxray:
             categories,
             include_empty)
 
-        image_splits = utils.split(
-            image_ids,
-            splits_frac)
+        splits_names = ['train', 'val', 'test']
+        image_splits = [
+            self._images.loc[self._images.index.isin(image_ids)
+                             & self._images['subset'] == 'train'],
+            self._images.loc[self._images.index.isin(image_ids)
+                             & self._images['subset'] == 'val'],
+            self._images.loc[self._images.index.isin(image_ids)
+                             & self._images['subset'] == 'test']
+        ]
 
         for split, sname in zip(image_splits, splits_names):
 

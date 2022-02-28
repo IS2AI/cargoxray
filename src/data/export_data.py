@@ -36,6 +36,4 @@ if __name__ == '__main__':
     dataset.export_data(export_dir='prepared_data_test',
                         selected_labels=selected_labels,
                         include_empty=True,
-                        splits_names=['train', 'val'],
-                        splits_frac=[0.8, 0.2],
                         copy_func=os.link)
