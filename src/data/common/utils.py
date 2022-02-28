@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
-from numpy import double
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 from tqdm import tqdm
 import random
+
+random.seed(0)
 
 
 def parse_region(region)\
@@ -70,7 +71,7 @@ def load_or_create_frame(path, columns, index) -> pd.DataFrame:
 
 def make_ref_cache(path) -> Dict[str, Path]:
     """Generates reference lookup table for faster search of files.
-    Reference is concatenation of filename and its size. Build dictionary 
+    Reference is concatenation of filename and its size. Build dictionary
     reference to file path.
 
     Args:
@@ -128,7 +129,7 @@ def split(data: List,
 
     for i in range(1, len(weights)):
         weights[i] += weights[i - 1]
-    
+
     splits = [[] for i in range(len(weights))]
 
     for i in data:
@@ -155,3 +156,19 @@ def convert_to_yolo(bbox, image_shape):
     new_h = h / ih
 
     return new_x, new_y, new_w, new_h
+
+
+def getRandomSubset(train_ratio: float,
+                    val_ratio: float,
+                    test_ratio: float) -> str:
+
+    assert train_ratio + val_ratio + test_ratio == 1
+
+    x = random.random()
+
+    if x <= train_ratio:
+        return 'train'
+    elif x <= train_ratio + val_ratio:
+        return 'val'
+    else:
+        return 'test'

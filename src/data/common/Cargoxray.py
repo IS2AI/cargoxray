@@ -1,21 +1,18 @@
 import hashlib
 import json
 import logging
-from os import R_OK
-import pathlib
+import random
 import shutil
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Tuple, Union
-from numpy import empty, select
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
-from PIL import Image, UnidentifiedImageError
-from pandas.core.indexes.range import RangeIndex
+from PIL import Image
 from tqdm import tqdm
 
-from common import config
-import random
-from common import utils
+from common import config, utils
+
+random.seed(0)
 
 
 class Cargoxray:
@@ -55,7 +52,7 @@ class Cargoxray:
         self._cache_ref = {}
 
         self._label_replacements = utils.load_label_replacements(
-            'src/data/common/label_mappings_fix.csv')
+            'cargoxray/src/data/common/label_mappings_fix.csv')
 
         self._images = utils.load_or_create_frame(
             path=self._images_json_path,
@@ -119,9 +116,11 @@ class Cargoxray:
 
     def apply_changes(self):
 
+        # Create images dir
         if not self._img_dir.exists():
             self._img_dir.mkdir(parents=True)
 
+        # Copy pending images
         for src, dst in tqdm(self._cache_copy,
                              desc='Copying new images'):
             try:
@@ -129,6 +128,7 @@ class Cargoxray:
             except Exception as e:
                 print(e)
 
+        # Backup existing database
         if self._images_json_path.exists():
             self._images_json_path.rename(
                 self._images_json_path.as_posix() + '.bak')
@@ -141,6 +141,7 @@ class Cargoxray:
             self._categories_json_path.rename(
                 self._categories_json_path.as_posix() + '.bak')
 
+        # Writeout new database
         self._images.reset_index().to_json(self._images_json_path,
                                            orient='records',
                                            compression='gzip')
@@ -268,6 +269,10 @@ class Cargoxray:
         image = Image.open(img_path)
         image.verify()
 
+        subset = utils.getRandomSubset(config.TRAIN_RATIO,
+                                       config.VAL_RATIO,
+                                       config.TEST_RATIO)
+
         new_image = pd.Series(
             name=image_id,
             data={
@@ -276,6 +281,7 @@ class Cargoxray:
                 'width': image.width,
                 'md5': self._get_md5(img_path),
                 'size': img_path.stat().st_size,
+                'subset': subset
             }
         )
 
@@ -575,3 +581,28 @@ class Cargoxray:
         txt = '\n'.join(txt) + '\n'
 
         return txt
+
+    def force_split(self,
+                    train: float,
+                    val: float,
+                    test: float) -> None:
+
+        assert train + val + test == 1
+
+        indices = self._images.index.tolist()
+
+        random.shuffle(indices)
+
+        train_indices = indices[:round(train*len(indices))]
+        val_indices = indices[round(train*len(indices)):
+                              round((train+val)*len(indices))]
+        test_indices = indices[round((train+val)*len(indices)):]
+
+        self._images.loc[self._images.index.isin(train_indices),
+                         'subset'] = 'train'
+        self._images.loc[self._images.index.isin(val_indices),
+                         'subset'] = 'val'
+        self._images.loc[self._images.index.isin(test_indices),
+                         'subset'] = 'test'
+
+        assert ~self._images['subset'].isna().any()
