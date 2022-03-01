@@ -52,7 +52,7 @@ class Cargoxray:
         self._cache_ref = {}
 
         self._label_replacements = utils.load_label_replacements(
-            'cargoxray/src/data/common/label_mappings_fix.csv')
+            'src/data/common/label_mappings_fix.csv')
 
         self._images = utils.load_or_create_frame(
             path=self._images_json_path,
@@ -403,13 +403,14 @@ class Cargoxray:
             include_empty)
 
         splits_names = ['train', 'val', 'test']
+
         image_splits = [
             self._images.loc[self._images.index.isin(image_ids)
-                             & self._images['subset'] == 'train'],
+                             & (self._images['subset'] == 'train')].index.values,
             self._images.loc[self._images.index.isin(image_ids)
-                             & self._images['subset'] == 'val'],
+                             & (self._images['subset'] == 'val')].index.values,
             self._images.loc[self._images.index.isin(image_ids)
-                             & self._images['subset'] == 'test']
+                             & (self._images['subset'] == 'test')].index.values
         ]
 
         for split, sname in zip(image_splits, splits_names):
