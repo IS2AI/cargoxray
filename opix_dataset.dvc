@@ -1,0 +1,5 @@
+outs:
+- md5: 5c80ae789408c89dcf54c19fa90e7f72.dir
+  size: 2634287056
+  nfiles: 17770
+  path: opix_dataset
