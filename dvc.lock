@@ -28,13 +28,16 @@ stages:
       size: 61227474965
       nfiles: 22899
   train:
-    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
-      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
-      --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
+    cmd: python src/model/yolov5/train.py --weights models/pretrained/weights/best.pt
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
+      64 --imgsz 1024 --device 0 --project models --name results --cache
     deps:
+    - path: models/pretrained/weights/best.pt
+      md5: 53332bd80eafd8cb3fc4a4dc11139cbd
+      size: 25378645
     - path: prepared_data
-      md5: a53f69dad722de8ac5cca81a24ef21d3.dir
-      size: 61229950352
+      md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
+      size: 61229705012
       nfiles: 22901
     - path: src/model
       md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
@@ -72,6 +75,137 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/results
-      md5: f279f48217340e2be7a1aa5cf8832d84.dir
-      size: 57220268
+      md5: 3743b14ff8e98f83097916deff6eb665.dir
+      size: 56265314
+      nfiles: 23
+  prepare_opix:
+    cmd: python src/data/prepare_opix.py
+    deps:
+    - path: opix_dataset/
+      md5: c26669dd13a739ed3c45b2731a1ac488.dir
+      size: 2634287221
+      nfiles: 17771
+    - path: src/data/prepare_opix.py
+      md5: 945c4f2d08b9eb0135eab1b6e60db1cc
+      size: 648
+    outs:
+    - path: prepared_opix
+      md5: 6669c3a6edd7f6debfaee8f1e9eef764.dir
+      size: 1056779606
+      nfiles: 17771
+  pretrain:
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
+      --data prepared_opix/dataset.yaml --hyp models/params/pretrain_hyp.yaml --epochs
+      1 --batch-size 64 --imgsz 1024 --device 0 --project models --name pretrained
+      --cache
+    deps:
+    - path: prepared_opix
+      md5: 9169698510bf104be479cd4e45e956fd.dir
+      size: 1058686437
+      nfiles: 17773
+    - path: src/model
+      md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
+      size: 1520689
+      nfiles: 126
+    params:
+      models/params/pretrain_hyp.yaml:
+        anchor_t: 4.0
+        box: 0.05
+        cls: 0.3
+        cls_pw: 1.0
+        copy_paste: 0.0
+        degrees: 3.0
+        fl_gamma: 0.0
+        fliplr: 0.5
+        flipud: 0.0
+        hsv_h: 0.0
+        hsv_s: 0.0
+        hsv_v: 0.25
+        iou_t: 0.2
+        lr0: 0.01
+        lrf: 0.2
+        mixup: 0.2
+        momentum: 0.937
+        mosaic: 1.0
+        obj: 0.7
+        obj_pw: 1.0
+        perspective: 0.0
+        scale: 0.5
+        shear: 3.0
+        translate: 0.1
+        warmup_bias_lr: 0.1
+        warmup_epochs: 3.0
+        warmup_momentum: 0.8
+        weight_decay: 0.0005
+    outs:
+    - path: models/pretrained
+      md5: 5e2de7cce7976563c877a243ffc4bf21.dir
+      size: 56091755
+      nfiles: 23
+  prepare_data:
+    cmd: python src/data/export_data.py
+    deps:
+    - path: data
+      md5: 6628748c0830810a15cc78c756ccf09c.dir
+      size: 101642814780
+      nfiles: 17782
+    - path: src/data/common
+      md5: 32e1c968a2a01d1b9e0e31b8e7c84855.dir
+      size: 63042
+      nfiles: 10
+    - path: src/data/export_data.py
+      md5: 7d858ddf1efb6a435563a81bf0292631
+      size: 1162
+    outs:
+    - path: prepared_data
+      md5: 2603f56451c38feda624fa21da90ea7c.dir
+      size: 61227474983
+      nfiles: 22899
+  direct_train:
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
+      64 --imgsz 1024 --device 0 --project models --name direct_results --cache
+    deps:
+    - path: prepared_data
+      md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
+      size: 61229705012
+      nfiles: 22901
+    - path: src/model
+      md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
+      size: 1520689
+      nfiles: 126
+    params:
+      models/params/hyp.yaml:
+        anchor_t: 4.0
+        box: 0.05
+        cls: 0.3
+        cls_pw: 1.0
+        copy_paste: 0.0
+        degrees: 3.0
+        fl_gamma: 0.0
+        fliplr: 0.5
+        flipud: 0.0
+        hsv_h: 0.0
+        hsv_s: 0.0
+        hsv_v: 0.25
+        iou_t: 0.2
+        lr0: 0.01
+        lrf: 0.2
+        mixup: 0.2
+        momentum: 0.937
+        mosaic: 1.0
+        obj: 0.7
+        obj_pw: 1.0
+        perspective: 0.0
+        scale: 0.5
+        shear: 3.0
+        translate: 0.1
+        warmup_bias_lr: 0.1
+        warmup_epochs: 3.0
+        warmup_momentum: 0.8
+        weight_decay: 0.0005
+    outs:
+    - path: models/direct_results
+      md5: ef31dc46ba9ca842df40353f8d8e9be9.dir
+      size: 56293134
       nfiles: 23
