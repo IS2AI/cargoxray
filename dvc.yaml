@@ -93,3 +93,42 @@ stages:
       - warmup_epochs
       - warmup_momentum
       - weight_decay
+  direct_train:
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name direct_results --cache
+    deps:
+    - prepared_data
+    - src/model
+    outs:
+    - models/direct_results
+    params:
+    - models/params/hyp.yaml:
+      - anchor_t
+      - box
+      - cls
+      - cls_pw
+      - copy_paste
+      - degrees
+      - fl_gamma
+      - fliplr
+      - flipud
+      - hsv_h
+      - hsv_s
+      - hsv_v
+      - iou_t
+      - lr0
+      - lrf
+      - mixup
+      - momentum
+      - mosaic
+      - obj
+      - obj_pw
+      - perspective
+      - scale
+      - shear
+      - translate
+      - warmup_bias_lr
+      - warmup_epochs
+      - warmup_momentum
+      - weight_decay
