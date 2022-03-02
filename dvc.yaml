@@ -1,5 +1,5 @@
 stages:
-  select_and_export:
+  prepare_data:
     cmd: python src/data/export_data.py
     deps:
     - data
@@ -11,16 +11,63 @@ stages:
     outs:
     - prepared_data
   train:
-    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt --data prepared_data/dataset.yaml
-      --hyp models/params/hyp.yaml --epochs 100 --batch-size 64 --imgsz 1024 --device
-      0 --project models --name results --cache
+    cmd: python src/model/yolov5/train.py --weights models/pretrained/weights/best.pt
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
     deps:
     - prepared_data
     - src/model
+    - models/pretrained/weights/best.pt
     outs:
     - models/results
     params:
     - models/params/hyp.yaml:
+      - anchor_t
+      - box
+      - cls
+      - cls_pw
+      - copy_paste
+      - degrees
+      - fl_gamma
+      - fliplr
+      - flipud
+      - hsv_h
+      - hsv_s
+      - hsv_v
+      - iou_t
+      - lr0
+      - lrf
+      - mixup
+      - momentum
+      - mosaic
+      - obj
+      - obj_pw
+      - perspective
+      - scale
+      - shear
+      - translate
+      - warmup_bias_lr
+      - warmup_epochs
+      - warmup_momentum
+      - weight_decay
+  prepare_opix:
+    cmd: python src/data/prepare_opix.py
+    deps:
+    - opix_dataset/
+    - src/data/prepare_opix.py
+    outs:
+    - prepared_opix
+  pretrain:
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
+      --data prepared_opix/dataset.yaml --hyp models/params/pretrain_hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name pretrained --cache
+    deps:
+    - prepared_opix
+    - src/model
+    outs:
+    - models/pretrained
+    params:
+    - models/params/pretrain_hyp.yaml:
       - anchor_t
       - box
       - cls
