@@ -29,20 +29,20 @@ stages:
       nfiles: 22899
   train:
     cmd: python src/model/yolov5/train.py --weights models/pretrained/weights/best.pt
-      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
-      64 --imgsz 1024 --device 0 --project models --name results --cache
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
     deps:
     - path: models/pretrained/weights/best.pt
-      md5: 53332bd80eafd8cb3fc4a4dc11139cbd
+      md5: 175bdbbeb8c2d0a2ebbbc3489e8fb15d
       size: 25378645
     - path: prepared_data
       md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
       size: 61229705012
       nfiles: 22901
     - path: src/model
-      md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
-      size: 1520689
-      nfiles: 126
+      md5: 2f6aed3f91016a011be17c8d953dff83.dir
+      size: 1521781
+      nfiles: 129
     params:
       models/params/hyp.yaml:
         anchor_t: 4.0
@@ -75,8 +75,8 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/results
-      md5: 3743b14ff8e98f83097916deff6eb665.dir
-      size: 56265314
+      md5: 9dafa3e15b06b3ed23451734cd0703b3.dir
+      size: 57305233
       nfiles: 23
   prepare_opix:
     cmd: python src/data/prepare_opix.py
@@ -96,7 +96,7 @@ stages:
   pretrain:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
       --data prepared_opix/dataset.yaml --hyp models/params/pretrain_hyp.yaml --epochs
-      1 --batch-size 64 --imgsz 1024 --device 0 --project models --name pretrained
+      100 --batch-size 64 --imgsz 1024 --device 0 --project models --name pretrained
       --cache
     deps:
     - path: prepared_opix
@@ -104,9 +104,9 @@ stages:
       size: 1058686437
       nfiles: 17773
     - path: src/model
-      md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
-      size: 1520689
-      nfiles: 126
+      md5: 2f6aed3f91016a011be17c8d953dff83.dir
+      size: 1521781
+      nfiles: 129
     params:
       models/params/pretrain_hyp.yaml:
         anchor_t: 4.0
@@ -139,8 +139,8 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/pretrained
-      md5: 5e2de7cce7976563c877a243ffc4bf21.dir
-      size: 56091755
+      md5: 336d26e9727e385e5e6f482f680d08fe.dir
+      size: 57162697
       nfiles: 23
   prepare_data:
     cmd: python src/data/export_data.py
@@ -163,17 +163,18 @@ stages:
       nfiles: 22899
   direct_train:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
-      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
-      64 --imgsz 1024 --device 0 --project models --name direct_results --cache
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name direct_results
+      --cache
     deps:
     - path: prepared_data
       md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
       size: 61229705012
       nfiles: 22901
     - path: src/model
-      md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
-      size: 1520689
-      nfiles: 126
+      md5: 2f6aed3f91016a011be17c8d953dff83.dir
+      size: 1521781
+      nfiles: 129
     params:
       models/params/hyp.yaml:
         anchor_t: 4.0
@@ -206,6 +207,6 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/direct_results
-      md5: ef31dc46ba9ca842df40353f8d8e9be9.dir
-      size: 56293134
+      md5: 3bd5d3d18a4f2897a68395572ff5e43b.dir
+      size: 57230116
       nfiles: 23
