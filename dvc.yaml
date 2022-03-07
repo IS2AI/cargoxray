@@ -100,7 +100,5 @@ stages:
     - models/results/weights/best.pt
     - src/model
     - prepared_data/test
-    outs:
-    - models/metrics
     metrics:
-    - models/metrics/metrics.json
+    - models/metrics/results.json

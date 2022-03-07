@@ -94,19 +94,16 @@ stages:
       size: 1056779606
       nfiles: 17771
   pretrain:
-    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
-      --data prepared_opix/dataset.yaml --hyp models/params/pretrain_hyp.yaml --epochs
-      100 --batch-size 64 --imgsz 1024 --device 0 --project models --name pretrained
-      --cache
+    cmd: sh src/model/pretrain.sh
     deps:
     - path: prepared_opix
       md5: 9169698510bf104be479cd4e45e956fd.dir
       size: 1058686437
       nfiles: 17773
     - path: src/model
-      md5: 2f6aed3f91016a011be17c8d953dff83.dir
-      size: 1521781
-      nfiles: 129
+      md5: 61d574a5974f5f526869f45e43810b09.dir
+      size: 16359800
+      nfiles: 135
     params:
       models/params/pretrain_hyp.yaml:
         anchor_t: 4.0
@@ -139,9 +136,9 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/pretrained
-      md5: 336d26e9727e385e5e6f482f680d08fe.dir
-      size: 57162697
-      nfiles: 23
+      md5: c2cdd612ea040f2b4972d1e5d957d743.dir
+      size: 56184479
+      nfiles: 24
   prepare_data:
     cmd: python src/data/export_data.py
     deps:
@@ -210,3 +207,70 @@ stages:
       md5: 3bd5d3d18a4f2897a68395572ff5e43b.dir
       size: 57230116
       nfiles: 23
+  fine_tune:
+    cmd: sh src/model/train.sh
+    deps:
+    - path: models/pretrained/weights/best.pt
+      md5: 80263855dc70b94873722e5ac27365b4
+      size: 25378645
+    - path: prepared_data
+      md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
+      size: 61229705012
+      nfiles: 22901
+    - path: src/model
+      md5: 61d574a5974f5f526869f45e43810b09.dir
+      size: 16359800
+      nfiles: 135
+    params:
+      models/params/hyp.yaml:
+        anchor_t: 4.0
+        box: 0.05
+        cls: 0.3
+        cls_pw: 1.0
+        copy_paste: 0.0
+        degrees: 3.0
+        fl_gamma: 0.0
+        fliplr: 0.5
+        flipud: 0.0
+        hsv_h: 0.0
+        hsv_s: 0.0
+        hsv_v: 0.25
+        iou_t: 0.2
+        lr0: 0.01
+        lrf: 0.2
+        mixup: 0.2
+        momentum: 0.937
+        mosaic: 1.0
+        obj: 0.7
+        obj_pw: 1.0
+        perspective: 0.0
+        scale: 0.5
+        shear: 3.0
+        translate: 0.1
+        warmup_bias_lr: 0.1
+        warmup_epochs: 3.0
+        warmup_momentum: 0.8
+        weight_decay: 0.0005
+    outs:
+    - path: models/results
+      md5: 4109d6db026e20f2bc557b141dc19d00.dir
+      size: 56373332
+      nfiles: 24
+  evaluate:
+    cmd: sh src/model/evaluate.sh
+    deps:
+    - path: models/results/weights/best.pt
+      md5: 5740e1408c565a7be38aa67e53487570
+      size: 25525333
+    - path: prepared_data/test
+      md5: e0166df1a6951af94861932760d7170c.dir
+      size: 6280312525
+      nfiles: 2271
+    - path: src/model
+      md5: 61d574a5974f5f526869f45e43810b09.dir
+      size: 16359800
+      nfiles: 135
+    outs:
+    - path: models/metrics/results.json
+      md5: 747ef01d372242312f1ca94d7d816940
+      size: 1394
