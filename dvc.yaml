@@ -55,9 +55,9 @@ stages:
     - stages/nms_pruning
 
   prepare_cargoxray:
-    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir stages/nms_pruning --output_dir stages/prepare_cargoxray
+    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir data/cargoxray --output_dir stages/prepare_cargoxray
     deps:
-    - stages/nms_pruning
+    - data/cargoxray
     - src/data/common
     - src/data/export_data.py
     outs:
@@ -109,3 +109,4 @@ stages:
     - stages/prepare_cargoxray
     metrics:
     - stages/evaluate/results.json
+g

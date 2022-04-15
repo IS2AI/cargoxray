@@ -35,9 +35,9 @@ stages:
       size: 16360906
       nfiles: 138
     - path: stages/prepare_cargoxray
-      md5: b76c4c61c1dba089fe2b2b32fe7ca279.dir
-      size: 62924155804
-      nfiles: 23843
+      md5: 74eda76c0c6312035a13c351ef305c8b.dir
+      size: 61526075139
+      nfiles: 23545
     params:
       params/hyp.yaml:
         anchor_t: 4.0
@@ -70,8 +70,8 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: stages/train
-      md5: 748dcfa8b567ef7d56b91199402f269b.dir
-      size: 313043184
+      md5: 892377e092cebb7075721f102e73e6a8.dir
+      size: 313594422
       nfiles: 24
   prepare_opix:
     cmd: python src/data/prepare_opix.py
@@ -272,8 +272,12 @@ stages:
       size: 1585
   prepare_cargoxray:
     cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir
-      stages/nms_pruning --output_dir stages/prepare_cargoxray
+      data/cargoxray --output_dir stages/prepare_cargoxray
     deps:
+    - path: data/cargoxray
+      md5: f3ebe0d646b04262a035b1a90ca06551.dir
+      size: 101641805677
+      nfiles: 17779
     - path: src/data/common
       md5: 32e1c968a2a01d1b9e0e31b8e7c84855.dir
       size: 63042
@@ -281,15 +285,11 @@ stages:
     - path: src/data/export_data.py
       md5: e5ffbc2b9914d4a9a4d7239802c99a1b
       size: 1675
-    - path: stages/nms_pruning
-      md5: e748a5165c38f15a76177fb319330706.dir
-      size: 978108
-      nfiles: 3
     outs:
     - path: stages/prepare_cargoxray
-      md5: 5133a5c83227303bebe78f84bde846bb.dir
-      size: 62921731821
-      nfiles: 23841
+      md5: ec99a31fd03f665fd5f564c76930421b.dir
+      size: 61523664122
+      nfiles: 23543
   nms_pruning:
     cmd: python src/data/nms.py -i data/cargoxray -o stages/nms_pruning
     deps:
