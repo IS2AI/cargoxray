@@ -28,23 +28,18 @@ stages:
       size: 61227474965
       nfiles: 22899
   train:
-    cmd: python src/model/yolov5/train.py --weights models/pretrained/weights/best.pt
-      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
-      --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
+    cmd: sh src/model/train.sh
     deps:
-    - path: models/pretrained/weights/best.pt
-      md5: 175bdbbeb8c2d0a2ebbbc3489e8fb15d
-      size: 25378645
-    - path: prepared_data
-      md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
-      size: 61229705012
-      nfiles: 22901
     - path: src/model
-      md5: 2f6aed3f91016a011be17c8d953dff83.dir
-      size: 1521781
-      nfiles: 129
+      md5: 0981d2ee9707be9fb42d92f6e51c1001.dir
+      size: 16360906
+      nfiles: 138
+    - path: stages/prepare_cargoxray
+      md5: b76c4c61c1dba089fe2b2b32fe7ca279.dir
+      size: 62924155804
+      nfiles: 23843
     params:
-      models/params/hyp.yaml:
+      params/hyp.yaml:
         anchor_t: 4.0
         box: 0.05
         cls: 0.3
@@ -74,10 +69,10 @@ stages:
         warmup_momentum: 0.8
         weight_decay: 0.0005
     outs:
-    - path: models/results
-      md5: 9dafa3e15b06b3ed23451734cd0703b3.dir
-      size: 57305233
-      nfiles: 23
+    - path: stages/train
+      md5: 748dcfa8b567ef7d56b91199402f269b.dir
+      size: 313043184
+      nfiles: 24
   prepare_opix:
     cmd: python src/data/prepare_opix.py
     deps:
@@ -101,9 +96,9 @@ stages:
       size: 1058686437
       nfiles: 17773
     - path: src/model
-      md5: 61d574a5974f5f526869f45e43810b09.dir
-      size: 16359800
-      nfiles: 135
+      md5: 1e26c884301be344e6b9456476d02d14.dir
+      size: 16360896
+      nfiles: 138
     params:
       models/params/pretrain_hyp.yaml:
         anchor_t: 4.0
@@ -136,8 +131,8 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/pretrained
-      md5: c2cdd612ea040f2b4972d1e5d957d743.dir
-      size: 56184479
+      md5: 5383d0bb76197ea065903266a05ce078.dir
+      size: 313345391
       nfiles: 24
   prepare_data:
     cmd: python src/data/export_data.py
@@ -211,16 +206,16 @@ stages:
     cmd: sh src/model/train.sh
     deps:
     - path: models/pretrained/weights/best.pt
-      md5: 80263855dc70b94873722e5ac27365b4
-      size: 25378645
+      md5: 7c221ad010f19bf94bab6de68d46e7ea
+      size: 153345781
     - path: prepared_data
       md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
       size: 61229705012
       nfiles: 22901
     - path: src/model
-      md5: 61d574a5974f5f526869f45e43810b09.dir
-      size: 16359800
-      nfiles: 135
+      md5: 1e26c884301be344e6b9456476d02d14.dir
+      size: 16360896
+      nfiles: 138
     params:
       models/params/hyp.yaml:
         anchor_t: 4.0
@@ -253,24 +248,60 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/results
-      md5: 4109d6db026e20f2bc557b141dc19d00.dir
-      size: 56373332
+      md5: 02c5754d21c7991287e8e5f76ebf5fa2.dir
+      size: 314918531
       nfiles: 24
   evaluate:
     cmd: sh src/model/evaluate.sh
     deps:
-    - path: models/results/weights/best.pt
-      md5: 5740e1408c565a7be38aa67e53487570
-      size: 25525333
-    - path: prepared_data/test
-      md5: e0166df1a6951af94861932760d7170c.dir
-      size: 6280312525
-      nfiles: 2271
     - path: src/model
-      md5: 61d574a5974f5f526869f45e43810b09.dir
-      size: 16359800
-      nfiles: 135
+      md5: 0981d2ee9707be9fb42d92f6e51c1001.dir
+      size: 16360906
+      nfiles: 138
+    - path: stages/prepare_cargoxray
+      md5: 8d369f38c9a282fc6d779c3c37f107c1.dir
+      size: 62924420477
+      nfiles: 23844
+    - path: stages/train
+      md5: 748dcfa8b567ef7d56b91199402f269b.dir
+      size: 313043184
+      nfiles: 24
     outs:
-    - path: models/metrics/results.json
-      md5: 747ef01d372242312f1ca94d7d816940
-      size: 1394
+    - path: stages/evaluate/results.json
+      md5: e5dcefa43ed4ee9b18352264b1fa491e
+      size: 1585
+  prepare_cargoxray:
+    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir
+      stages/nms_pruning --output_dir stages/prepare_cargoxray
+    deps:
+    - path: src/data/common
+      md5: 32e1c968a2a01d1b9e0e31b8e7c84855.dir
+      size: 63042
+      nfiles: 10
+    - path: src/data/export_data.py
+      md5: e5ffbc2b9914d4a9a4d7239802c99a1b
+      size: 1675
+    - path: stages/nms_pruning
+      md5: e748a5165c38f15a76177fb319330706.dir
+      size: 978108
+      nfiles: 3
+    outs:
+    - path: stages/prepare_cargoxray
+      md5: 5133a5c83227303bebe78f84bde846bb.dir
+      size: 62921731821
+      nfiles: 23841
+  nms_pruning:
+    cmd: python src/data/nms.py -i data/cargoxray -o stages/nms_pruning
+    deps:
+    - path: data/cargoxray
+      md5: f3ebe0d646b04262a035b1a90ca06551.dir
+      size: 101641805677
+      nfiles: 17779
+    - path: src/data/nms.py
+      md5: 4f29dd7926a1fdedd87482a81a8e331c
+      size: 3954
+    outs:
+    - path: stages/nms_pruning
+      md5: e748a5165c38f15a76177fb319330706.dir
+      size: 978108
+      nfiles: 3

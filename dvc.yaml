@@ -45,26 +45,33 @@ stages:
       - warmup_epochs
       - warmup_momentum
       - weight_decay
-
-  prepare_data:
-    cmd: python src/data/export_data.py
+  
+  nms_pruning:
+    cmd: python src/data/nms.py -i data/cargoxray -o stages/nms_pruning
     deps:
-    - data
+    - data/cargoxray
+    - src/data/nms.py
+    outs:
+    - stages/nms_pruning
+
+  prepare_cargoxray:
+    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir stages/nms_pruning --output_dir stages/prepare_cargoxray
+    deps:
+    - stages/nms_pruning
     - src/data/common
     - src/data/export_data.py
     outs:
-    - prepared_data
+    - stages/prepare_cargoxray
 
-  fine_tune:
+  train:
     cmd: sh src/model/train.sh
     deps:
-    - prepared_data
+    - stages/prepare_cargoxray
     - src/model
-    - models/pretrained/weights/best.pt
     outs:
-    - models/results
+    - stages/train
     params:
-    - models/params/hyp.yaml:
+    - params/hyp.yaml:
       - anchor_t
       - box
       - cls
@@ -97,8 +104,8 @@ stages:
   evaluate:
     cmd: sh src/model/evaluate.sh
     deps:
-    - models/results/weights/best.pt
+    - stages/train
     - src/model
-    - prepared_data/test
+    - stages/prepare_cargoxray
     metrics:
-    - models/metrics/results.json
+    - stages/evaluate/results.json

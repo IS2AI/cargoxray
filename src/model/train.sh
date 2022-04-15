@@ -1,1 +1,1 @@
-python src/model/yolov5/train.py --weights models/pretrained/weights/best.pt --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size 64 --imgsz 1024 --device 0 --project models --name results --cache
+python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt --data stages/prepare_cargoxray/dataset.yaml --hyp params/hyp.yaml --epochs 100 --batch-size 32 --imgsz 1024 --device 0,1,2,3 --project stages --name train --cache
