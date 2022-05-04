@@ -3,20 +3,20 @@ stages:
   prepare_opix:
     cmd: python src/data/prepare_opix.py
     deps:
-    - opix_dataset/
+    - data/opixray
     - src/data/prepare_opix.py
     outs:
-    - prepared_opix
+    - stages/prepare_opix
 
   pretrain:
-    cmd: sh src/model/pretrain.sh
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt --data stages/prepare_opix/dataset.yaml --hyp params/pretrain_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain --cache
     deps:
-    - prepared_opix
+    - stages/prepare_opix
     - src/model
     outs:
-    - models/pretrained
+    - stages/pretrain
     params:
-    - models/params/pretrain_hyp.yaml:
+    - params/pretrain_hyp.yaml:
       - anchor_t
       - box
       - cls
@@ -55,23 +55,25 @@ stages:
     - stages/nms_pruning
 
   prepare_cargoxray:
-    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir data/cargoxray --output_dir stages/prepare_cargoxray
+    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir stages/nms_pruning --output_dir stages/prepare_cargoxray
     deps:
     - data/cargoxray
+    - stages/nms_pruning
     - src/data/common
     - src/data/export_data.py
     outs:
     - stages/prepare_cargoxray
 
   train:
-    cmd: sh src/model/train.sh
+    cmd: python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train --cache
     deps:
     - stages/prepare_cargoxray
+    - stages/pretrain
     - src/model
     outs:
     - stages/train
     params:
-    - params/hyp.yaml:
+    - params/train_hyp.yaml:
       - anchor_t
       - box
       - cls
@@ -100,13 +102,3 @@ stages:
       - warmup_epochs
       - warmup_momentum
       - weight_decay
-
-  evaluate:
-    cmd: sh src/model/evaluate.sh
-    deps:
-    - stages/train
-    - src/model
-    - stages/prepare_cargoxray
-    metrics:
-    - stages/evaluate/results.json
-g

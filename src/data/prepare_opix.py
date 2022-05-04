@@ -3,8 +3,8 @@ import shutil
 
 from PIL import Image
 
-OPIX_PATH = 'opix_dataset'
-OPIX_PREPARED = 'prepared_opix'
+OPIX_PATH = 'data/opixray'
+OPIX_PREPARED = 'stages/prepare_opix'
 
 TO_GRAYSCALE = True
 
@@ -17,7 +17,7 @@ def prepare(dir, dst):
 
         if p.is_dir():
             continue
-        
+
         d = dst / p.relative_to(dir)
         d.parent.mkdir(parents=True, exist_ok=True)
 
@@ -28,7 +28,7 @@ def prepare(dir, dst):
         else:
             shutil.copy(p, d)
 
-        print(d)
+        # print(d)
 
 
 if __name__ == '__main__':
