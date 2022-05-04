@@ -1,0 +1,1 @@
+python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt --data prepared_opix/dataset.yaml --hyp models/params/pretrain_hyp.yaml --epochs 100 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project models --name pretrained --cache

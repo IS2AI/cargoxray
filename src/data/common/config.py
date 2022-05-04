@@ -22,3 +22,5 @@ CATEGORIES_FRAME_INDEX = CATEGORIES_FRAME_COLUMNS[0]
 LABEL_REPLACEMENTS_PATH = 'label_mappings_fix.csv'
 
 IMAGE_FORMATS = {'.tif', '.tiff', '.jpg', '.jpeg'}
+
+TRAIN_VAL_RATIO = 0.85

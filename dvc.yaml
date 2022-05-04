@@ -1,22 +1,79 @@
 stages:
-  select_and_export:
-    cmd: python src/data/export_data.py
+
+  prepare_opix:
+    cmd: python src/data/prepare_opix.py
     deps:
-    - data
-    - src/data
+    - data/opixray
+    - src/data/prepare_opix.py
     outs:
-    - prepared_data
-  train:
-    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt --data prepared_data/dataset.yaml
-      --hyp models/params/hyp.yaml --epochs 1 --batch-size 64 --imgsz 1024 --device
-      0 --project models --name results --cache
+    - stages/prepare_opix
+
+  pretrain:
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt --data stages/prepare_opix/dataset.yaml --hyp params/pretrain_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain --cache
     deps:
-    - prepared_data
+    - stages/prepare_opix
     - src/model
     outs:
-    - models/results
+    - stages/pretrain
     params:
-    - models/params/hyp.yaml:
+    - params/pretrain_hyp.yaml:
+      - anchor_t
+      - box
+      - cls
+      - cls_pw
+      - copy_paste
+      - degrees
+      - fl_gamma
+      - fliplr
+      - flipud
+      - hsv_h
+      - hsv_s
+      - hsv_v
+      - iou_t
+      - lr0
+      - lrf
+      - mixup
+      - momentum
+      - mosaic
+      - obj
+      - obj_pw
+      - perspective
+      - scale
+      - shear
+      - translate
+      - warmup_bias_lr
+      - warmup_epochs
+      - warmup_momentum
+      - weight_decay
+  
+  nms_pruning:
+    cmd: python src/data/nms.py -i data/cargoxray -o stages/nms_pruning
+    deps:
+    - data/cargoxray
+    - src/data/nms.py
+    outs:
+    - stages/nms_pruning
+
+  prepare_cargoxray:
+    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir stages/nms_pruning --output_dir stages/prepare_cargoxray
+    deps:
+    - data/cargoxray
+    - stages/nms_pruning
+    - src/data/common
+    - src/data/export_data.py
+    outs:
+    - stages/prepare_cargoxray
+
+  train:
+    cmd: python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train --cache
+    deps:
+    - stages/prepare_cargoxray
+    - stages/pretrain
+    - src/model
+    outs:
+    - stages/train
+    params:
+    - params/train_hyp.yaml:
       - anchor_t
       - box
       - cls

@@ -4,31 +4,179 @@ stages:
     cmd: python src/data/export_data.py
     deps:
     - path: data
-      md5: 1d850eb0bf57dcccac08e7c504a47520.dir
-      size: 96477855929
-      nfiles: 17396
-    - path: src/data
-      md5: e8627c3ca1ddcf2079b9b71cf4d64f72.dir
-      size: 60634
-      nfiles: 12
+      md5: ccf701575ceca81313792e4e722a6418.dir
+      size: 101642784629
+      nfiles: 17782
+    - path: src/data/Cargoxray.py
+      md5: 153833faa1e5a3546e372c0afec7af5f
+      size: 18212
+    - path: src/data/config.py
+      md5: 6c915b47555939aa1a1c920d7acb5f07
+      size: 797
+    - path: src/data/export_data.py
+      md5: 55d9bcae15f30e0e1fe88894804b6184
+      size: 1258
+    - path: src/data/label_mappings_fix.csv
+      md5: 905e2b9690f176b443a12d2edbbfa3f7
+      size: 3239
+    - path: src/data/utils.py
+      md5: e3b25979b2312997ddf238bb30cb73dd
+      size: 3525
     outs:
     - path: prepared_data
-      md5: debc332c3ffa8dca49599ad76e7f7972.dir
-      size: 56064942199
-      nfiles: 22129
+      md5: 89626728a1e0813e12e9516157e7cd5a.dir
+      size: 61227474965
+      nfiles: 22899
   train:
+    cmd: python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt
+      --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs
+      5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train
+      --cache
+    deps:
+    - path: src/model
+      md5: bd69eddba48a06d2c7b553b72d4374ce.dir
+      size: 18603782
+      nfiles: 151
+    - path: stages/prepare_cargoxray
+      md5: b76c4c61c1dba089fe2b2b32fe7ca279.dir
+      size: 62924155804
+      nfiles: 23843
+    - path: stages/pretrain
+      md5: 95f749d55d56b7665103c8856d295c1a.dir
+      size: 313669458
+      nfiles: 24
+    params:
+      params/train_hyp.yaml:
+        anchor_t: 4.0
+        box: 0.05
+        cls: 0.3
+        cls_pw: 1.0
+        copy_paste: 0.0
+        degrees: 3.0
+        fl_gamma: 0.0
+        fliplr: 0.5
+        flipud: 0.0
+        hsv_h: 0.0
+        hsv_s: 0.0
+        hsv_v: 0.25
+        iou_t: 0.2
+        lr0: 0.01
+        lrf: 0.2
+        mixup: 0.2
+        momentum: 0.937
+        mosaic: 1.0
+        obj: 0.7
+        obj_pw: 1.0
+        perspective: 0.0
+        scale: 0.5
+        shear: 3.0
+        translate: 0.1
+        warmup_bias_lr: 0.1
+        warmup_epochs: 3.0
+        warmup_momentum: 0.8
+        weight_decay: 0.0005
+    outs:
+    - path: stages/train
+      md5: 726ea8f4fbdb26dc7e012cd21a0e07ff.dir
+      size: 313172733
+      nfiles: 24
+  prepare_opix:
+    cmd: python src/data/prepare_opix.py
+    deps:
+    - path: data/opixray
+      md5: d2080e2075c427a6bd3ea8fd3ddd1ebe.dir
+      size: 2633882815
+      nfiles: 17771
+    - path: src/data/prepare_opix.py
+      md5: 378c65bdc7cec889256618a17f1b41e1
+      size: 648
+    outs:
+    - path: stages/prepare_opix
+      md5: 214802925283ff93c6dcec4aac4fdc53.dir
+      size: 1056622925
+      nfiles: 17771
+  pretrain:
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt
+      --data stages/prepare_opix/dataset.yaml --hyp params/pretrain_hyp.yaml --epochs
+      5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain
+      --cache
+    deps:
+    - path: src/model
+      md5: bd69eddba48a06d2c7b553b72d4374ce.dir
+      size: 18603782
+      nfiles: 151
+    - path: stages/prepare_opix
+      md5: ef90f320093d10a0408faa747d4f9538.dir
+      size: 1058582845
+      nfiles: 17773
+    params:
+      params/pretrain_hyp.yaml:
+        anchor_t: 4.0
+        box: 0.05
+        cls: 0.3
+        cls_pw: 1.0
+        copy_paste: 0.0
+        degrees: 3.0
+        fl_gamma: 0.0
+        fliplr: 0.5
+        flipud: 0.0
+        hsv_h: 0.0
+        hsv_s: 0.0
+        hsv_v: 0.25
+        iou_t: 0.2
+        lr0: 0.01
+        lrf: 0.2
+        mixup: 0.2
+        momentum: 0.937
+        mosaic: 1.0
+        obj: 0.7
+        obj_pw: 1.0
+        perspective: 0.0
+        scale: 0.5
+        shear: 3.0
+        translate: 0.1
+        warmup_bias_lr: 0.1
+        warmup_epochs: 3.0
+        warmup_momentum: 0.8
+        weight_decay: 0.0005
+    outs:
+    - path: stages/pretrain
+      md5: 95f749d55d56b7665103c8856d295c1a.dir
+      size: 313669458
+      nfiles: 24
+  prepare_data:
+    cmd: python src/data/export_data.py
+    deps:
+    - path: data
+      md5: 6628748c0830810a15cc78c756ccf09c.dir
+      size: 101642814780
+      nfiles: 17782
+    - path: src/data/common
+      md5: 32e1c968a2a01d1b9e0e31b8e7c84855.dir
+      size: 63042
+      nfiles: 10
+    - path: src/data/export_data.py
+      md5: 7d858ddf1efb6a435563a81bf0292631
+      size: 1162
+    outs:
+    - path: prepared_data
+      md5: 2603f56451c38feda624fa21da90ea7c.dir
+      size: 61227474983
+      nfiles: 22899
+  direct_train:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5s6.pt
-      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 1 --batch-size
-      64 --imgsz 1024 --device 0 --project models --name results --cache
+      --data prepared_data/dataset.yaml --hyp models/params/hyp.yaml --epochs 100
+      --batch-size 64 --imgsz 1024 --device 0 --project models --name direct_results
+      --cache
     deps:
     - path: prepared_data
-      md5: debc332c3ffa8dca49599ad76e7f7972.dir
-      size: 56064942199
-      nfiles: 22129
+      md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
+      size: 61229705012
+      nfiles: 22901
     - path: src/model
-      md5: 17ee0a2b3973bc7b52be22ba78dde88f.dir
-      size: 1520689
-      nfiles: 126
+      md5: 2f6aed3f91016a011be17c8d953dff83.dir
+      size: 1521781
+      nfiles: 129
     params:
       models/params/hyp.yaml:
         anchor_t: 4.0
@@ -52,7 +200,56 @@ stages:
         obj: 0.7
         obj_pw: 1.0
         perspective: 0.0
-        scale: 0.6
+        scale: 0.5
+        shear: 3.0
+        translate: 0.1
+        warmup_bias_lr: 0.1
+        warmup_epochs: 3.0
+        warmup_momentum: 0.8
+        weight_decay: 0.0005
+    outs:
+    - path: models/direct_results
+      md5: 3bd5d3d18a4f2897a68395572ff5e43b.dir
+      size: 57230116
+      nfiles: 23
+  fine_tune:
+    cmd: sh src/model/train.sh
+    deps:
+    - path: models/pretrained/weights/best.pt
+      md5: 7c221ad010f19bf94bab6de68d46e7ea
+      size: 153345781
+    - path: prepared_data
+      md5: 1da8521184bc56f7740e7a87ce81e3b3.dir
+      size: 61229705012
+      nfiles: 22901
+    - path: src/model
+      md5: 1e26c884301be344e6b9456476d02d14.dir
+      size: 16360896
+      nfiles: 138
+    params:
+      models/params/hyp.yaml:
+        anchor_t: 4.0
+        box: 0.05
+        cls: 0.3
+        cls_pw: 1.0
+        copy_paste: 0.0
+        degrees: 3.0
+        fl_gamma: 0.0
+        fliplr: 0.5
+        flipud: 0.0
+        hsv_h: 0.0
+        hsv_s: 0.0
+        hsv_v: 0.25
+        iou_t: 0.2
+        lr0: 0.01
+        lrf: 0.2
+        mixup: 0.2
+        momentum: 0.937
+        mosaic: 1.0
+        obj: 0.7
+        obj_pw: 1.0
+        perspective: 0.0
+        scale: 0.5
         shear: 3.0
         translate: 0.1
         warmup_bias_lr: 0.1
@@ -61,6 +258,64 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: models/results
-      md5: 7a8ee0471c4d1a1b941bb8159f0d42ab.dir
-      size: 56063191
-      nfiles: 23
+      md5: 02c5754d21c7991287e8e5f76ebf5fa2.dir
+      size: 314918531
+      nfiles: 24
+  evaluate:
+    cmd: sh src/model/evaluate.sh
+    deps:
+    - path: src/model
+      md5: 0981d2ee9707be9fb42d92f6e51c1001.dir
+      size: 16360906
+      nfiles: 138
+    - path: stages/prepare_cargoxray
+      md5: 8d369f38c9a282fc6d779c3c37f107c1.dir
+      size: 62924420477
+      nfiles: 23844
+    - path: stages/train
+      md5: 748dcfa8b567ef7d56b91199402f269b.dir
+      size: 313043184
+      nfiles: 24
+    outs:
+    - path: stages/evaluate/results.json
+      md5: e5dcefa43ed4ee9b18352264b1fa491e
+      size: 1585
+  prepare_cargoxray:
+    cmd: python src/data/export_data.py --images_dir data/cargoxray/images --data_dir
+      stages/nms_pruning --output_dir stages/prepare_cargoxray
+    deps:
+    - path: data/cargoxray
+      md5: f3ebe0d646b04262a035b1a90ca06551.dir
+      size: 101641805677
+      nfiles: 17779
+    - path: src/data/common
+      md5: dec2e3ffc310ad395fec1d196d5240a4.dir
+      size: 63042
+      nfiles: 10
+    - path: src/data/export_data.py
+      md5: e5ffbc2b9914d4a9a4d7239802c99a1b
+      size: 1675
+    - path: stages/nms_pruning
+      md5: e748a5165c38f15a76177fb319330706.dir
+      size: 978108
+      nfiles: 3
+    outs:
+    - path: stages/prepare_cargoxray
+      md5: 5133a5c83227303bebe78f84bde846bb.dir
+      size: 62921731821
+      nfiles: 23841
+  nms_pruning:
+    cmd: python src/data/nms.py -i data/cargoxray -o stages/nms_pruning
+    deps:
+    - path: data/cargoxray
+      md5: f3ebe0d646b04262a035b1a90ca06551.dir
+      size: 101641805677
+      nfiles: 17779
+    - path: src/data/nms.py
+      md5: 4f29dd7926a1fdedd87482a81a8e331c
+      size: 3954
+    outs:
+    - path: stages/nms_pruning
+      md5: e748a5165c38f15a76177fb319330706.dir
+      size: 978108
+      nfiles: 3
