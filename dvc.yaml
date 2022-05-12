@@ -9,7 +9,7 @@ stages:
     - stages/prepare_opix
 
   pretrain:
-    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt --data stages/prepare_opix/dataset.yaml --hyp params/pretrain_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain --cache
+    cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt --data stages/prepare_opix/dataset.yaml --hyp params/pretrain_hyp.yaml --epochs 100 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain --cache
     deps:
     - stages/prepare_opix
     - src/model
@@ -65,7 +65,7 @@ stages:
     - stages/prepare_cargoxray
 
   train:
-    cmd: python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train --cache
+    cmd: python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs 100 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train --cache
     deps:
     - stages/prepare_cargoxray
     - stages/pretrain

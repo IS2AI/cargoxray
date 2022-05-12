@@ -30,7 +30,7 @@ stages:
   train:
     cmd: python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt
       --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs
-      5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train
+      100 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train
       --cache
     deps:
     - path: src/model
@@ -42,8 +42,8 @@ stages:
       size: 62924155804
       nfiles: 23843
     - path: stages/pretrain
-      md5: 95f749d55d56b7665103c8856d295c1a.dir
-      size: 313669458
+      md5: 926236da56bf18faeaa3ff2624cf4fb4.dir
+      size: 313512688
       nfiles: 24
     params:
       params/train_hyp.yaml:
@@ -77,8 +77,8 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: stages/train
-      md5: 726ea8f4fbdb26dc7e012cd21a0e07ff.dir
-      size: 313172733
+      md5: c7e5b84f4c9a0cacf97088314a1980bc.dir
+      size: 313016068
       nfiles: 24
   prepare_opix:
     cmd: python src/data/prepare_opix.py
@@ -98,7 +98,7 @@ stages:
   pretrain:
     cmd: python src/model/yolov5/train.py --weights /usr/src/basemodels/yolov5l6.pt
       --data stages/prepare_opix/dataset.yaml --hyp params/pretrain_hyp.yaml --epochs
-      5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain
+      100 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name pretrain
       --cache
     deps:
     - path: src/model
@@ -141,8 +141,8 @@ stages:
         weight_decay: 0.0005
     outs:
     - path: stages/pretrain
-      md5: 95f749d55d56b7665103c8856d295c1a.dir
-      size: 313669458
+      md5: 926236da56bf18faeaa3ff2624cf4fb4.dir
+      size: 313512688
       nfiles: 24
   prepare_data:
     cmd: python src/data/export_data.py
