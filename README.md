@@ -5,8 +5,11 @@ The project utilizes YOLOv5 model to detect 7 different classes of goods in the 
 # How to run
 ## Quick start
 1. Install dependencies from `requirements.txt`
-2. Run `dvc repro`
-3. Stages folder will contain the results of execution
+2. Run `dvc dag` to view the project pipeline
+3. Run `dvc repro` to reproduce the experiment.
+4. Stages folder will contain the results of executions.
+
+DVC (Data Version Control) manages the project pipeline and automatically rebuilds stages if their dependecies have changed. For example, new images were added, model code has been changed, hyperparameter tuning, etc.
 
 ## Details of execution
 1. Import images using `src/data/import_data.py`
@@ -39,12 +42,3 @@ Stores information on the processed JSON files
 - `json_id`: ID number of a JSON file
 - `filepath`: Path to the JSON file
 - `md5`: MD5 checksum of the JSON file
-
-
-## Utils
-Utils contain scripts for importing new images and generating YOLO datasets.
-
-# TODO
-- [ ] Detect duplicate annotations
-- [ ] Make a report after images import/export
-- [x] Run import/export script with command line arguments
