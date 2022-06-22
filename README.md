@@ -1,6 +1,20 @@
 # Description
 It a dataset of x-ray images of cargo vehicles, such as trucks and railcars.
-Annotations are in YOLO format stored in JSON files with Pandas.
+The project utilizes YOLOv5 model to detect 7 different classes of goods in the x-ray images.
+
+# How to run
+## Quick start
+1. Install dependencies from `requirements.txt`
+2. Run `dvc repro`
+3. Stages folder will contain the results of execution
+
+## Details of execution
+1. Import images using `src/data/import_data.py`
+1.1. Set path to dataset destination (defaults to data/cargoxray)
+1.2. Import data by calling `import_data()` method with path to imported folder
+2. Run `python src/data/nms.py -i data/cargoxray -o stages/nms_pruning` to filter out duplicate bounding boxes
+3. Run `python src/data/export_data.py --images_dir data/cargoxray/images --data_dir stages/nms_pruning --output_dir stages/prepare_cargoxray` to export images and annotations in YOLO format.
+4. Run `python src/model/yolov5/train.py --weights stages/pretrain/weights/best.pt --data stages/prepare_cargoxray/dataset.yaml --hyp params/train_hyp.yaml --epochs 5 --batch-size 64 --imgsz 1024 --device 0,1,2,3 --project stages --name train --cache` to start training
 
 # File descriptions
 
