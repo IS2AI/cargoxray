@@ -2,6 +2,8 @@
 It a dataset of x-ray images of cargo vehicles, such as trucks and railcars.
 The project utilizes [YOLOv5](https://github.com/ultralytics/yolov5) model to detect 7 different classes of goods in the x-ray images. YOLOv5 is included in this repository as a git module in `src/model/yolov5`.
 
+![Sample images](assets/samples.png)
+
 # How to run
 ## Quick start
 1. Install dependencies from `requirements.txt`
@@ -23,7 +25,9 @@ DVC (Data Version Control) manages the project pipeline and automatically rebuil
 ### Inference
 6. Run `python src/model/yolov5/detect.py --weights stages/train/weights/best.pt --source path/to/test/images`. Refer to [YOLOv5 detect.py](https://github.com/ultralytics/yolov5/blob/1a2af372d2ae15419a7c2a6ddf4a321d35da38e3/detect.py) usage documentation.
 
-# File descriptions
+# Dataset descriptions
+
+![Dataset structure](assets/dataset_diagram.png)
 
 ### `annotations.json.gz`
 Stores information on the bounding boxes and their properties 
